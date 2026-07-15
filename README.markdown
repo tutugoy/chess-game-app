@@ -1,3 +1,4 @@
-# Javascript Chess Game by Abdul
-please subscribe  my channel "THE SOLUTION HUB" for more videos and tuts
+# Javascript Chess Game
+### Credit: Abdul at THE SOLUTION HUB <br>
 
+I used Abdul's tutorial to make this project. I will add better UI and features soon.
