@@ -4,7 +4,9 @@ body {
   height: 100%;
   padding: 0;
   margin: 0;
-  font-family: sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #0084ff 100%);
+  min-height: 100vh;
 }
 
 div * {
@@ -15,23 +17,47 @@ div * {
 
 #turn {
   max-width: 451px;
-  max-height: 30px;
+  max-height: 40px;
   width: 100%;
   height: 100%;
   position: relative;
   float: right;
-  border-radius: 5px;
-  border: 1px solid rgb(0, 0, 0);
-  border-style: inset;
+  border-radius: 8px;
+  border: 2px solid #2c3e50;
   text-align: center;
-  padding: 5px 0 0 0;
-  background: #fff;
-  transition: .85s linear;
+  padding: 8px 0 0 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#status {
+  max-width: 451px;
+  max-height: 40px;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  float: right;
+  border-radius: 8px;
+  border: 2px solid #2c3e50;
+  text-align: center;
+  padding: 8px 0 0 0;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-top: 8px;
+  min-height: 45px;
 }
 
 .turnhighlight {
-  background: #5cb85c !important;
-  color: #fff;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+  transform: scale(1.05);
 }
 
 #game {
@@ -41,6 +67,10 @@ div * {
   height: 100%;
   position: relative;
   margin: 20px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .cellprefix {
@@ -51,39 +81,43 @@ div * {
   float: left;
   margin: 3px;
   padding: 15px 0 0 20px;
+  font-weight: bold;
+  color: #2c3e50;
 }
 
 .gamecell {
-  border: 1px solid #000;
+  border: 2px solid #34495e;
   width: 100%;
   height: 100%;
   max-width: 50px;
   max-height: 50px;
   float: left;
   margin: 3px;
-  transition: all 0.5s ease-in-out;
-  border-radius: 5px;
+  transition: all 0.2s ease;
+  border-radius: 6px;
   font-size: 30pt;
   padding: 0 0 0 6px;
   cursor: pointer;
   z-index: 1;
+  background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
 }
 
 .gamecell:hover {
   color: #fff;
-  background: rgba(37, 88, 228, 0.712);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   z-index: 2;
-  transform: translate(10px, -10px);
-  animation: neonBlueText 1.5s ease-in-out infinite alternate;
+  transform: scale(1.08);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
 }
 
 .grey {
-  background: rgba(128, 128, 128, 0.801);
+  background: rgba(44, 62, 80, 0.15) !important;
 }
 
 .green {
-  /*background: green !important;*/
-  background: rgb(65, 161, 73) !important;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+  box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.4);
+  transform: scale(1.05);
 }
 
 .neonblue_txt {

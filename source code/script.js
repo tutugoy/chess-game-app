@@ -4,6 +4,7 @@ let main = {
     turn: 'w',
     selectedpiece: '',
     highlighted: [],
+    gameState: 'normal',
     pieces: {
       w_king: {
         position: '5_1',
@@ -677,10 +678,8 @@ let main = {
       if (main.variables.turn == 'w') {
         main.variables.turn = 'b';
         
-        // toggle highlighted coordinates
         main.methods.togglehighlight(main.variables.highlighted);
         main.variables.highlighted.length = 0;
-        // set the selected piece to '' again
         main.variables.selectedpiece = '';
 
         $('#turn').html("It's Blacks Turn");
@@ -690,13 +689,13 @@ let main = {
           $('#turn').removeClass('turnhighlight');
         }, 1500);
 
-      } else if (main.variables.turn = 'b'){
+        main.methods.updateGameState();
+
+      } else if (main.variables.turn == 'b'){
         main.variables.turn = 'w';
 
-        // toggle highlighted coordinates
         main.methods.togglehighlight(main.variables.highlighted);
         main.variables.highlighted.length = 0;
-        // set the selected piece to '' again
         main.variables.selectedpiece = '';
 
         $('#turn').html("It's Whites Turn");
@@ -706,13 +705,150 @@ let main = {
           $('#turn').removeClass('turnhighlight');
         }, 1500);
 
+        main.methods.updateGameState();
+
       }
 
     },
 
+    updateGameState: function(){
+      let kingColor = main.variables.turn;
+      let kingName = kingColor === 'w' ? 'w_king' : 'b_king';
+      let kingPos = main.variables.pieces[kingName].position;
+      let inCheck = main.methods.isKingInCheck(kingPos, kingColor);
+      let hasLegalMoves = main.methods.hasLegalMoves(kingColor);
+
+      if (!hasLegalMoves) {
+        if (inCheck) {
+          main.variables.gameState = 'checkmate';
+          $('#status').html('CHECKMATE');
+        } else {
+          main.variables.gameState = 'stalemate';
+          $('#status').html('STALEMATE');
+        }
+      } else if (inCheck) {
+        main.variables.gameState = 'check';
+        $('#status').html('CHECK');
+      } else {
+        main.variables.gameState = 'normal';
+        $('#status').html('');
+      }
+    },
+
+    isKingInCheck: function(kingPos, kingColor) {
+      let opponentColor = kingColor === 'w' ? 'b' : 'w';
+      
+      for (let piece in main.variables.pieces) {
+        if (main.variables.pieces[piece].captured) continue;
+        if (piece.slice(0,1) !== opponentColor) continue;
+        
+        let possibleMoves = main.methods.getPossibleMoves(piece);
+        if (possibleMoves.indexOf(kingPos) !== -1) {
+          return true;
+        }
+      }
+      return false;
+    },
+
+    hasLegalMoves: function(color) {
+      for (let piece in main.variables.pieces) {
+        if (main.variables.pieces[piece].captured) continue;
+        if (piece.slice(0,1) !== color) continue;
+        
+        let moves = main.methods.getPossibleMoves(piece);
+        for (let i = 0; i < moves.length; i++) {
+          if (main.methods.isMoveValid(piece, moves[i])) {
+            return true;
+          }
+        }
+      }
+      return false;
+    },
+
+    isMoveValid: function(piece, targetPos) {
+      let targetCell = $('#' + targetPos).attr('chess');
+      if (targetCell === undefined) return false;
+      if (targetCell !== 'null' && targetCell.slice(0,1) === piece.slice(0,1)) return false;
+      
+      let color = piece.slice(0,1);
+      let kingName = color === 'w' ? 'w_king' : 'b_king';
+      let kingPos = main.variables.pieces[kingName].position;
+      
+      let tempTarget = main.variables.pieces[targetPos.split('_')[0] + '_' + targetPos.split('_')[1]];
+      let originalPos = main.variables.pieces[piece].position;
+      
+      main.variables.pieces[piece].position = targetPos;
+      
+      if (piece === kingName) {
+        kingPos = targetPos;
+      }
+      
+      let safe = !main.methods.isKingInCheck(kingPos, color);
+      
+      main.variables.pieces[piece].position = originalPos;
+      
+      return safe;
+    },
+
+    getPossibleMoves: function(piece) {
+      let type = main.variables.pieces[piece].type;
+      let pos = main.variables.pieces[piece].position;
+      let x = parseInt(pos.split('_')[0]);
+      let y = parseInt(pos.split('_')[1]);
+      let moves = [];
+
+      if (type.includes('pawn')) {
+        let dir = type.includes('w') ? 1 : -1;
+        if (y + dir >= 1 && y + dir <= 8) {
+          moves.push(x + '_' + (y + dir));
+          if (!main.variables.pieces[piece].moved && y + 2 * dir >= 1 && y + 2 * dir <= 8) {
+            if ($('#' + x + '_' + (y + dir)).attr('chess') === 'null') {
+              moves.push(x + '_' + (y + 2 * dir));
+            }
+          }
+        }
+        if (x - 1 >= 1 && y + dir >= 1 && y + dir <= 8) moves.push((x - 1) + '_' + (y + dir));
+        if (x + 1 <= 8 && y + dir >= 1 && y + dir <= 8) moves.push((x + 1) + '_' + (y + dir));
+      } else if (type.includes('knight')) {
+        [[1,2],[1,-2],[-1,2],[-1,-2],[2,1],[2,-1],[-2,1],[-2,-1]].forEach(off => {
+          let nx = x + off[0], ny = y + off[1];
+          if (nx >= 1 && nx <= 8 && ny >= 1 && ny <= 8) moves.push(nx + '_' + ny);
+        });
+      } else if (type.includes('king')) {
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            if (dx === 0 && dy === 0) continue;
+            let nx = x + dx, ny = y + dy;
+            if (nx >= 1 && nx <= 8 && ny >= 1 && ny <= 8) moves.push(nx + '_' + ny);
+          }
+        }
+      } else if (type.includes('rook') || type.includes('queen')) {
+        [[0,1],[0,-1],[1,0],[-1,0]].forEach(dir => {
+          for (let i = 1; i < 8; i++) {
+            let nx = x + dir[0] * i, ny = y + dir[1] * i;
+            if (nx < 1 || nx > 8 || ny < 1 || ny > 8) break;
+            moves.push(nx + '_' + ny);
+            if ($('#' + nx + '_' + ny).attr('chess') !== 'null') break;
+          }
+        });
+      }
+      if (type.includes('bishop') || type.includes('queen')) {
+        [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(dir => {
+          for (let i = 1; i < 8; i++) {
+            let nx = x + dir[0] * i, ny = y + dir[1] * i;
+            if (nx < 1 || nx > 8 || ny < 1 || ny > 8) break;
+            moves.push(nx + '_' + ny);
+            if ($('#' + nx + '_' + ny).attr('chess') !== 'null') break;
+          }
+        });
+      }
+
+      return moves;
+    },
+
     togglehighlight: function(options) {
       options.forEach(function(element, index, array) {
-        $('#' + element).toggleClass("green shake-little neongreen_txt");
+        $('#' + element).toggleClass("green neongreen_txt");
       });
     },
 
@@ -723,6 +859,10 @@ $(document).ready(function() {
   main.methods.gamesetup();
 
   $('.gamecell').click(function(e) {
+
+    if (main.variables.gameState === 'checkmate' || main.variables.gameState === 'stalemate') {
+      return;
+    }
 
     var selectedpiece = {
       name: '',
@@ -745,6 +885,12 @@ $(document).ready(function() {
       // moveoptions
       main.variables.selectedpiece = e.target.id;
       main.methods.moveoptions($(this).attr('chess'));
+      
+      let piece = $(this).attr('chess');
+      main.variables.highlighted = main.variables.highlighted.filter(opt => main.methods.isMoveValid(piece, opt));
+      main.methods.togglehighlight(main.variables.highlighted);
+      $('.' + 'green').removeClass('green');
+      main.methods.togglehighlight(main.variables.highlighted);
 
     } else if (main.variables.selectedpiece !='' && target.name == 'null') { // move selected piece piece
 
