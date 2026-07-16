@@ -92,6 +92,11 @@
     <div class='cellprefix'>h</div><br>
     <div id='turn'>It's Whites Turn!</div>
     <div id='status'></div>
+    <div id="game-controls">
+      <button id='restart-btn' onclick="main.methods.restart()">Restart Game</button>
+      <button id='draw-btn' onclick="main.methods.offerDraw()">Offer Draw</button>
+      <button id='resign-btn' onclick="main.methods.resign()">Resign (White)</button>
+    </div>
   </div>
 <!-- partial -->
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
