@@ -5,6 +5,7 @@ let main = {
     selectedpiece: '',
     highlighted: [],
     gameState: 'normal',
+    moveList: [],
     pieces: {
       w_king: {
         position: '5_1',
@@ -641,13 +642,9 @@ let main = {
         main.variables.pieces[selectedpiece.name].moved = true;
         // captured piece
         main.variables.pieces[target.name].captured = true;
-        /*
-        // toggle highlighted coordinates
-        main.methods.togglehighlight(main.variables.highlighted);
-        main.variables.highlighted.length = 0;
-        // set the selected piece to '' again
-        main.variables.selectedpiece = '';
-        */
+        
+        // Add move to move list
+        main.methods.addMoveToList(selectedpiece.name, selectedpiece.id, target.id, true, false);
       
     },
 
@@ -663,14 +660,10 @@ let main = {
       $('#' + main.variables.selectedpiece).attr('chess','null');
       main.variables.pieces[selectedpiece].position = target.id;
       main.variables.pieces[selectedpiece].moved = true;
+      
+      // Add move to move list
+      main.methods.addMoveToList(selectedpiece, main.variables.selectedpiece, target.id, false, false);
 
-      /*
-      // toggle highlighted coordinates
-      main.methods.togglehighlight(main.variables.highlighted);
-      main.variables.highlighted.length = 0;
-      // set the selected piece to '' again
-      main.variables.selectedpiece = '';
-      */
     },
 
     endturn: function(){
@@ -682,12 +675,15 @@ let main = {
         main.variables.highlighted.length = 0;
         main.variables.selectedpiece = '';
 
-        $('#turn').html("It's Blacks Turn");
+        $('#turn-display').html("It's Black's Turn");
 
-        $('#turn').addClass('turnhighlight');
+        $('#turn-display').addClass('turnhighlight');
         window.setTimeout(function(){
-          $('#turn').removeClass('turnhighlight');
+          $('#turn-display').removeClass('turnhighlight');
         }, 1500);
+
+        // Update resign button text
+        $('#resign-btn').html('Resign (Black)');
 
         main.methods.updateGameState();
 
@@ -698,12 +694,15 @@ let main = {
         main.variables.highlighted.length = 0;
         main.variables.selectedpiece = '';
 
-        $('#turn').html("It's Whites Turn");
+        $('#turn-display').html("It's White's Turn");
 
-        $('#turn').addClass('turnhighlight');
+        $('#turn-display').addClass('turnhighlight');
         window.setTimeout(function(){
-          $('#turn').removeClass('turnhighlight');
+          $('#turn-display').removeClass('turnhighlight');
         }, 1500);
+
+        // Update resign button text
+        $('#resign-btn').html('Resign (White)');
 
         main.methods.updateGameState();
 
@@ -721,18 +720,132 @@ let main = {
       if (!hasLegalMoves) {
         if (inCheck) {
           main.variables.gameState = 'checkmate';
-          $('#status').html('CHECKMATE');
+          $('#status-display').html('CHECKMATE').removeClass().addClass('checkmate');
         } else {
           main.variables.gameState = 'stalemate';
-          $('#status').html('STALEMATE');
+          $('#status-display').html('STALEMATE').removeClass().addClass('stalemate');
         }
       } else if (inCheck) {
         main.variables.gameState = 'check';
-        $('#status').html('CHECK');
+        $('#status-display').html('CHECK').removeClass().addClass('check');
       } else {
         main.variables.gameState = 'normal';
-        $('#status').html('');
+        $('#status-display').html('').removeClass();
       }
+    },
+
+    clearMoveList: function() {
+      main.variables.moveList = [];
+      $('#move-list').html('');
+    },
+
+    addMoveToList: function(pieceName, fromPos, toPos, captured, promotion) {
+      let piece = main.variables.pieces[pieceName];
+      let color = pieceName.slice(0, 1);
+      let pieceType = piece.type.replace(color + '_', '');
+      
+      // Convert position to algebraic notation
+      let fromFile = String.fromCharCode(96 + parseInt(fromPos.split('_')[0]));
+      let fromRank = fromPos.split('_')[1];
+      let toFile = String.fromCharCode(96 + parseInt(toPos.split('_')[0]));
+      let toRank = toPos.split('_')[1];
+      
+      let moveNotation = '';
+      
+      // Piece letter (K, Q, R, B, N, or empty for pawn)
+      let pieceLetter = '';
+      if (pieceType === 'king') pieceLetter = 'K';
+      else if (pieceType === 'queen') pieceLetter = 'Q';
+      else if (pieceType === 'rook') pieceLetter = 'R';
+      else if (pieceType === 'bishop') pieceLetter = 'B';
+      else if (pieceType === 'knight') pieceLetter = 'N';
+      
+      // Check for castling
+      if (pieceType === 'king' && Math.abs(parseInt(fromPos.split('_')[0]) - parseInt(toPos.split('_')[0])) === 2) {
+        if (toPos.split('_')[0] === '7') {
+          moveNotation = 'O-O'; // Kingside castle
+        } else if (toPos.split('_')[0] === '3') {
+          moveNotation = 'O-O-O'; // Queenside castle
+        }
+      } else {
+        // Regular move
+        moveNotation = pieceLetter;
+        
+        // Add capture indicator
+        if (captured) {
+          if (pieceType === 'pawn') {
+            moveNotation += fromFile;
+          }
+          moveNotation += 'x';
+        }
+        
+        moveNotation += toFile + toRank;
+        
+        // Add promotion notation
+        if (promotion) {
+          moveNotation += '=Q'; // Default to queen promotion
+        }
+      }
+      
+      // Check for check/checkmate
+      let kingColor = main.variables.turn === 'w' ? 'b' : 'w';
+      let kingName = kingColor === 'w' ? 'w_king' : 'b_king';
+      let kingPos = main.variables.pieces[kingName].position;
+      let inCheck = main.methods.isKingInCheck(kingPos, kingColor);
+      let hasLegalMoves = main.methods.hasLegalMoves(kingColor);
+      
+      if (!hasLegalMoves && inCheck) {
+        moveNotation += '#';
+      } else if (inCheck) {
+        moveNotation += '+';
+      }
+      
+      // Add to move list
+      let moveNumber = Math.floor(main.variables.moveList.length / 2) + 1;
+      
+      if (color === 'w') {
+        // White's move - start new move
+        main.variables.moveList.push({
+          number: moveNumber,
+          white: moveNotation,
+          black: ''
+        });
+      } else {
+        // Black's move - complete the pair
+        if (main.variables.moveList.length > 0 && main.variables.moveList[main.variables.moveList.length - 1].black === '') {
+          main.variables.moveList[main.variables.moveList.length - 1].black = moveNotation;
+        } else {
+          main.variables.moveList.push({
+            number: moveNumber,
+            white: '',
+            black: moveNotation
+          });
+        }
+      }
+      
+      // Update the move list display
+      main.methods.updateMoveListDisplay();
+    },
+
+    updateMoveListDisplay: function() {
+      let html = '';
+      main.variables.moveList.forEach(function(move, index) {
+        html += '<div class="move-entry">';
+        html += '<span class="move-number">' + move.number + '.</span>';
+        if (move.white) {
+          html += '<span class="move-white">' + move.white + '</span>';
+        } else {
+          html += '<span class="move-white"></span>';
+        }
+        if (move.black) {
+          html += '<span class="move-black">' + move.black + '</span>';
+        }
+        html += '</div>';
+      });
+      $('#move-list').html(html);
+      
+      // Scroll to bottom
+      $('#move-list-container').scrollTop($('#move-list-container')[0].scrollHeight);
     },
 
     isKingInCheck: function(kingPos, kingColor) {
@@ -848,7 +961,7 @@ let main = {
 
     togglehighlight: function(options) {
       options.forEach(function(element, index, array) {
-        $('#' + element).toggleClass("green neongreen_txt");
+        $('#' + element).toggleClass("green");
       });
     },
 
@@ -1087,13 +1200,20 @@ let main = {
       main.variables.selectedpiece = '';
       main.variables.highlighted = [];
       main.variables.gameState = 'normal';
+      main.variables.moveList = [];
 
       // Clear any highlights on the board
-      $('.gamecell').removeClass('green neongreen_txt');
+      $('.gamecell').removeClass('green');
+
+      // Clear all board cells to fix remnant icon issue
+      $('.gamecell').html('');
+      $('.gamecell').attr('chess', 'null');
 
       // Reset the UI
-      $('#turn').html("It's Whites Turn!");
-      $('#status').html('');
+      $('#turn-display').html("It's White's Turn!");
+      $('#status-display').html('').removeClass('check checkmate stalemate draw');
+      $('#move-list').html('');
+      $('#resign-btn').html('Resign (White)');
 
       // Re-setup the game board
       main.methods.gamesetup();
@@ -1102,18 +1222,18 @@ let main = {
     offerDraw: function() {
       if (confirm("Offer a draw? The game will end in a draw if accepted.")) {
         main.variables.gameState = 'draw';
-        $('#status').html('DRAW BY AGREEMENT');
-        $('#turn').html('Game Over - Draw');
+        $('#status-display').html('DRAW BY AGREEMENT').removeClass().addClass('draw');
+        $('#turn-display').html('Game Over - Draw');
         alert("Game ended in a draw by agreement!");
       }
     },
 
     resign: function() {
-      if (confirm("Resign the game? White will lose and Black wins.")) {
+      if (confirm("Resign the game? " + (main.variables.turn === 'w' ? 'White' : 'Black') + " will lose and " + (main.variables.turn === 'w' ? 'Black' : 'White') + " wins.")) {
         main.variables.gameState = 'resigned';
-        $('#status').html('WHITE RESIGNED - BLACK WINS');
-        $('#turn').html('Game Over - Black Wins');
-        alert("White has resigned. Black wins!");
+        $('#status-display').html((main.variables.turn === 'w' ? 'WHITE' : 'BLACK') + ' RESIGNED - ' + (main.variables.turn === 'w' ? 'BLACK' : 'WHITE') + ' WINS').removeClass().addClass('checkmate');
+        $('#turn-display').html('Game Over - ' + (main.variables.turn === 'w' ? 'Black' : 'White') + ' Wins');
+        alert((main.variables.turn === 'w' ? 'White' : 'Black') + ' has resigned. ' + (main.variables.turn === 'w' ? 'Black' : 'White') + ' wins!');
       }
     },
 
@@ -1125,7 +1245,7 @@ $(document).ready(function() {
 
   $('.gamecell').click(function(e) {
 
-    if (main.variables.gameState === 'checkmate' || main.variables.gameState === 'stalemate') {
+    if (main.variables.gameState === 'checkmate' || main.variables.gameState === 'stalemate' || main.variables.gameState === 'draw' || main.variables.gameState === 'resigned') {
       return;
     }
 
@@ -1159,46 +1279,54 @@ $(document).ready(function() {
 
     } else if (main.variables.selectedpiece !='' && target.name == 'null') { // move selected piece piece
 
+      // Check if move is valid (both legal chess move and doesn't leave king in check)
+      if (main.variables.highlighted.indexOf(target.id) === -1 || !main.methods.isMoveValid(selectedpiece.name, target.id)) {
+        return; // Illegal move - don't allow it
+      }
+
       if (selectedpiece.name == 'w_king' || selectedpiece.name == 'b_king'){
         
-        let t0 = (selectedpiece.name = 'w_king');
-        let t1 = (selectedpiece.name = 'b_king');
+        let t0 = (selectedpiece.name == 'w_king');
+        let t1 = (selectedpiece.name == 'b_king');
         let t2 = (main.variables.pieces[selectedpiece.name].moved == false);
         let t3 = (main.variables.pieces['b_rook2'].moved == false);
         let t4 = (main.variables.pieces['w_rook2'].moved == false);
         let t5 = (target.id == '7_8');
         let t6 = (target.id == '7_1');
-  
-        if (t0 && t2 && t4 &&t6){ // castle w_king
-  
+
+        if (t0 && t2 && t4 && t6){ // castle w_king
+
           let k_position = '5_1';
           let k_target = '7_1';
           let r_position = '8_1';
           let r_target = '6_1';
-  
+
           main.variables.pieces['w_king'].position = '7_1';
           main.variables.pieces['w_king'].moved = true;
           $('#'+k_position).html('');
           $('#'+k_position).attr('chess','null');
           $('#'+k_target).html(main.variables.pieces['w_king'].img);
           $('#'+k_target).attr('chess','w_king');
-  
+
           main.variables.pieces['w_rook2'].position = '6_1';
           main.variables.pieces['w_rook2'].moved = true;
           $('#'+r_position).html('');
           $('#'+r_position).attr('chess','null');
           $('#'+r_target).html(main.variables.pieces['w_rook2'].img);
           $('#'+r_target).attr('chess','w_rook2');
-  
+
+          // Add move to list
+          main.methods.addMoveToList(selectedpiece.name, k_position, k_target, false, false);
+          
           main.methods.endturn();
-  
+
         } else if (t1 && t2 && t3 && t5){ // castle b_king
-  
+
           let k_position = '5_8';
           let k_target = '7_8';
           let r_position = '8_8';
           let r_target = '6_8';
-  
+
           // w_king
           main.variables.pieces['b_king'].position = '7_8';
           main.variables.pieces['b_king'].moved = true;
@@ -1206,21 +1334,24 @@ $(document).ready(function() {
           $('#'+k_position).attr('chess','null');
           $('#'+k_target).html(main.variables.pieces['b_king'].img);
           $('#'+k_target).attr('chess','b_king');
-  
+
           main.variables.pieces['b_rook2'].position = '6_8';
           main.variables.pieces['b_rook2'].moved = true;
           $('#'+r_position).html('');
           $('#'+r_position).attr('chess','null');
           $('#'+r_target).html(main.variables.pieces['b_rook2'].img);
           $('#'+r_target).attr('chess','b_rook2');
-  
+
+          // Add move to list
+          main.methods.addMoveToList(selectedpiece.name, k_position, k_target, false, false);
+          
           main.methods.endturn();
           
-        } else { // move selectedpiece
+        } else { // move selectedpiece (non-castling king move)
           main.methods.move(target);
           main.methods.endturn();
         }
-  
+
       } else { // else if selecedpiece.name is not white/black king than move
 
         main.methods.move(target);
@@ -1232,8 +1363,13 @@ $(document).ready(function() {
       
       if (selectedpiece.id != target.id && main.variables.highlighted.indexOf(target.id) != (-1)) { // if it's not trying to capture pieces not in its movement range
         
+        // Check if capture is valid
+        if (!main.methods.isMoveValid(selectedpiece.name, target.id)) {
+          return; // Illegal capture - don't allow it
+        }
+        
         // capture
-        main.methods.capture(target)
+        main.methods.capture(target);
         main.methods.endturn();
         
       }
