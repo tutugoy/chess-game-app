@@ -45,7 +45,7 @@ div * {
   border: 2px solid #2c3e50;
   text-align: center;
   padding: 8px 0 0 0;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #ffe262 0%, #f5576c 100%);
   color: white;
   font-weight: bold;
   font-size: 16px;
@@ -132,7 +132,6 @@ div * {
   animation: neonGreenText 1.5s ease-in-out infinite alternate;
 }
 
-/* --- N E O N    T E X T --- */
 @keyframes neonBlueText {
   from {
     text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff, 0 0 40px #228dff,
@@ -180,14 +179,6 @@ div * {
   }
 }
 
-/*! * * * * * * * * * * * * * * * * * * * *\  
-  CSShake :: shake-little
-  v1.5.0
-  CSS classes to move your DOM
-  (c) 2015 @elrumordelaluz
-  http://elrumordelaluz.github.io/csshake/
-  Licensed under MIT
-\* * * * * * * * * * * * * * * * * * * * */
 .shake-little {
   display: inline-block;
   transform-origin: center center; }
@@ -311,7 +302,6 @@ div * {
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite; }
 
-/* Game Controls Styling */
 #controls {
   margin-top: 20px;
   text-align: center;
