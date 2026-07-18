@@ -6,6 +6,10 @@ let main = {
     highlighted: [],
     gameState: 'normal',
     moveList: [],
+    // New variables for advanced rules
+    enPassantTarget: null, // { file: x, rank: y, color: 'w'/'b' }
+    positionHistory: [], // For threefold repetition
+    halfMoveClock: 0, // For 50-move rule (half-moves since last pawn move/capture)
     pieces: {
       w_king: {
         position: '5_1',
@@ -432,6 +436,17 @@ let main = {
             });
 
           }
+          
+          // Add en passant capture squares
+          if (main.variables.enPassantTarget && main.variables.enPassantTarget.color === 'b') {
+            let ep = main.variables.enPassantTarget;
+            let pawnFile = parseInt(position.x);
+            let pawnRank = parseInt(position.y);
+            // En passant target is 1 rank ahead for white pawn (the landing square)
+            if (ep.rank === pawnRank + 1 && (ep.file === pawnFile - 1 || ep.file === pawnFile + 1)) {
+              coordinates.push(ep.file + '_' + ep.rank);
+            }
+          }
 
           options = (main.methods.options(startpoint, coordinates, main.variables.pieces[selectedpiece].type)).slice(0);
           main.variables.highlighted = options.slice(0);
@@ -455,6 +470,17 @@ let main = {
               return (parseInt(position.x) + parseInt(val.x)) + '_' + (parseInt(position.y) + parseInt(val.y));
             });
 
+          }
+          
+          // Add en passant capture squares
+          if (main.variables.enPassantTarget && main.variables.enPassantTarget.color === 'w') {
+            let ep = main.variables.enPassantTarget;
+            let pawnFile = parseInt(position.x);
+            let pawnRank = parseInt(position.y);
+            // En passant target is 1 rank behind for black pawn (the landing square)
+            if (ep.rank === pawnRank - 1 && (ep.file === pawnFile - 1 || ep.file === pawnFile + 1)) {
+              coordinates.push(ep.file + '_' + ep.rank);
+            }
           }
 
           options = (main.methods.options(startpoint, coordinates, main.variables.pieces[selectedpiece].type)).slice(0);
@@ -519,8 +545,17 @@ let main = {
               sp.x = startpoint.split('_')[0];
               sp.y = startpoint.split('_')[1];
               
+              // Check if this is an en passant capture square
+              let isEnPassant = false;
+              if (main.variables.enPassantTarget && main.variables.enPassantTarget.color === 'b') {
+                let ep = main.variables.enPassantTarget;
+                if (parseInt(coordinate[0]) === ep.file && parseInt(coordinate[1]) === ep.rank) {
+                  isEnPassant = true;
+                }
+              }
+              
               if (coordinate[0] < sp.x || coordinate[0] > sp.x){ // if the coordinate is on either side of the center, check if it has an opponent piece on it;
-                return ($('#' + val).attr('chess') != 'null' && ($('#' + val).attr('chess')).slice(0,1) == 'b'); // return coordinates with opponent pieces on them
+                return (isEnPassant || ($('#' + val).attr('chess') != 'null' && ($('#' + val).attr('chess')).slice(0,1) == 'b')); // return coordinates with opponent pieces on them or en passant
               } else { // else if the coordinate is in the center;
                 if (coordinate[1] == (parseInt(sp.y) + 2) && $('#' + sp.x + '_' + (parseInt(sp.y) + 1)).attr('chess') != 'null'){
                   // do nothing if this is the pawns first move, and there is a piece in front of the 2nd coordinate;
@@ -542,8 +577,17 @@ let main = {
             sp.x = startpoint.split('_')[0];
             sp.y = startpoint.split('_')[1];
             
+            // Check if this is an en passant capture square
+            let isEnPassant = false;
+            if (main.variables.enPassantTarget && main.variables.enPassantTarget.color === 'w') {
+              let ep = main.variables.enPassantTarget;
+              if (parseInt(coordinate[0]) === ep.file && parseInt(coordinate[1]) === ep.rank) {
+                isEnPassant = true;
+              }
+            }
+            
             if (coordinate[0] < sp.x || coordinate[0] > sp.x){ // if the coordinate is on either side of the center, check if it has an opponent piece on it;
-              return ($('#' + val).attr('chess') != 'null' && ($('#' + val).attr('chess')).slice(0,1) == 'w'); // return coordinates with opponent pieces on them
+              return (isEnPassant || ($('#' + val).attr('chess') != 'null' && ($('#' + val).attr('chess')).slice(0,1) == 'w')); // return coordinates with opponent pieces on them or en passant
             } else { // else if the coordinate is in the center;
               if (coordinate[1] == (parseInt(sp.y) - 2) && $('#' + sp.x + '_' + (parseInt(sp.y) - 1)).attr('chess') != 'null'){
                 // do nothing if this is the pawns first move, and there is a piece in front of the 2nd coordinate;
@@ -630,27 +674,86 @@ let main = {
         id: main.variables.selectedpiece
       };
 
+      let pieceType = main.variables.pieces[selectedpiece.name].type;
+      let isPawn = pieceType.includes('pawn');
+      let isEnPassant = false;
       
-        //new cell
-        $('#' + target.id).html(main.variables.pieces[selectedpiece.name].img);
-        $('#' + target.id).attr('chess',selectedpiece.name);
-        //old cell
-        $('#' + selectedpiece.id).html('');
-        $('#' + selectedpiece.id).attr('chess','null');
-        //moved piece
-        main.variables.pieces[selectedpiece.name].position = target.id;
-        main.variables.pieces[selectedpiece.name].moved = true;
-        // captured piece
-        main.variables.pieces[target.name].captured = true;
+      // Check for en passant capture
+      if (isPawn && main.variables.enPassantTarget) {
+        let ep = main.variables.enPassantTarget;
+        let targetFile = parseInt(target.id.split('_')[0]);
+        let targetRank = parseInt(target.id.split('_')[1]);
         
-        // Add move to move list
-        main.methods.addMoveToList(selectedpiece.name, selectedpiece.id, target.id, true, false);
+        if (targetFile === ep.file && targetRank === ep.rank) {
+          isEnPassant = true;
+          // Remove the captured pawn from the board
+          // If white pawn moved (ep.color === 'w'), captured pawn is on rank ABOVE target (ep.rank + 1)
+          // If black pawn moved (ep.color === 'b'), captured pawn is on rank BELOW target (ep.rank - 1)
+          let capturedPawnRank = ep.color === 'w' ? ep.rank + 1 : ep.rank - 1;
+          let capturedPawnPos = ep.file + '_' + capturedPawnRank;
+          $('#' + capturedPawnPos).html('');
+          $('#' + capturedPawnPos).attr('chess', 'null');
+          
+          // Find and mark the captured pawn
+          for (let p in main.variables.pieces) {
+            if (main.variables.pieces[p].position === capturedPawnPos && main.variables.pieces[p].type.includes('pawn')) {
+              main.variables.pieces[p].captured = true;
+              break;
+            }
+          }
+        }
+      }
       
+      //new cell
+      $('#' + target.id).html(main.variables.pieces[selectedpiece.name].img);
+      $('#' + target.id).attr('chess',selectedpiece.name);
+      //old cell
+      $('#' + selectedpiece.id).html('');
+      $('#' + selectedpiece.id).attr('chess','null');
+      //moved piece
+      main.variables.pieces[selectedpiece.name].position = target.id;
+      main.variables.pieces[selectedpiece.name].moved = true;
+      // captured piece
+      if (!isEnPassant) {
+        main.variables.pieces[target.name].captured = true;
+      }
+      
+      // Update half-move clock: reset on capture or pawn move
+      if (isPawn || !isEnPassant) {
+        main.variables.halfMoveClock = 0;
+      } else {
+        main.variables.halfMoveClock++;
+      }
+      
+      // Add move to move list
+      main.methods.addMoveToList(selectedpiece.name, selectedpiece.id, target.id, true, false);
+      
+      // Clear en passant target after any move
+      main.variables.enPassantTarget = null;
+      
+      // Set new en passant target if pawn moved two squares
+      if (isPawn) {
+        let fromRank = parseInt(selectedpiece.id.split('_')[1]);
+        let toRank = parseInt(target.id.split('_')[1]);
+        if (Math.abs(toRank - fromRank) === 2) {
+          let file = parseInt(target.id.split('_')[0]);
+          let color = pieceType.slice(0, 1);
+          main.variables.enPassantTarget = {
+            file: file,
+            rank: (fromRank + toRank) / 2,
+            color: color
+          };
+        }
+      }
     },
 
     move: function (target) {
 
       let selectedpiece = $('#' + main.variables.selectedpiece).attr('chess');
+      let pieceType = main.variables.pieces[selectedpiece].type;
+      let isPawn = pieceType.includes('pawn');
+      let fromRank = parseInt(main.variables.selectedpiece.split('_')[1]);
+      let toRank = parseInt(target.id.split('_')[1]);
 
       // new cell
       $('#' + target.id).html(main.variables.pieces[selectedpiece].img);
@@ -661,9 +764,29 @@ let main = {
       main.variables.pieces[selectedpiece].position = target.id;
       main.variables.pieces[selectedpiece].moved = true;
       
+      // Update half-move clock: reset on pawn move, increment otherwise
+      if (isPawn) {
+        main.variables.halfMoveClock = 0;
+      } else {
+        main.variables.halfMoveClock++;
+      }
+      
       // Add move to move list
       main.methods.addMoveToList(selectedpiece, main.variables.selectedpiece, target.id, false, false);
-
+      
+      // Clear en passant target after any move
+      main.variables.enPassantTarget = null;
+      
+      // Set new en passant target if pawn moved two squares
+      if (isPawn && Math.abs(toRank - fromRank) === 2) {
+        let file = parseInt(target.id.split('_')[0]);
+        let color = pieceType.slice(0, 1);
+        main.variables.enPassantTarget = {
+          file: file,
+          rank: (fromRank + toRank) / 2,
+          color: color
+        };
+      }
     },
 
     endturn: function(){
@@ -685,6 +808,27 @@ let main = {
         // Update resign button text
         $('#resign-btn').html('Resign (Black)');
 
+        // Update position history for threefold repetition
+        main.methods.updatePositionHistory();
+        
+        // Check for threefold repetition
+        if (main.methods.checkThreefoldRepetition()) {
+          main.variables.gameState = 'draw';
+          $('#status-display').html('DRAW BY THREEFOLD REPETITION').removeClass().addClass('draw');
+          $('#turn-display').html('Game Over - Draw');
+          alert('Draw by threefold repetition!');
+          return;
+        }
+        
+        // Check for 50-move rule
+        if (main.methods.checkFiftyMoveRule()) {
+          main.variables.gameState = 'draw';
+          $('#status-display').html('DRAW BY 50-MOVE RULE').removeClass().addClass('draw');
+          $('#turn-display').html('Game Over - Draw');
+          alert('Draw by 50-move rule!');
+          return;
+        }
+
         main.methods.updateGameState();
 
       } else if (main.variables.turn == 'b'){
@@ -703,6 +847,27 @@ let main = {
 
         // Update resign button text
         $('#resign-btn').html('Resign (White)');
+
+        // Update position history for threefold repetition
+        main.methods.updatePositionHistory();
+        
+        // Check for threefold repetition
+        if (main.methods.checkThreefoldRepetition()) {
+          main.variables.gameState = 'draw';
+          $('#status-display').html('DRAW BY THREEFOLD REPETITION').removeClass().addClass('draw');
+          $('#turn-display').html('Game Over - Draw');
+          alert('Draw by threefold repetition!');
+          return;
+        }
+        
+        // Check for 50-move rule
+        if (main.methods.checkFiftyMoveRule()) {
+          main.variables.gameState = 'draw';
+          $('#status-display').html('DRAW BY 50-MOVE RULE').removeClass().addClass('draw');
+          $('#turn-display').html('Game Over - Draw');
+          alert('Draw by 50-move rule!');
+          return;
+        }
 
         main.methods.updateGameState();
 
@@ -887,18 +1052,56 @@ let main = {
       let kingName = color === 'w' ? 'w_king' : 'b_king';
       let kingPos = main.variables.pieces[kingName].position;
       
-      let tempTarget = main.variables.pieces[targetPos.split('_')[0] + '_' + targetPos.split('_')[1]];
-      let originalPos = main.variables.pieces[piece].position;
+      let pieceType = main.variables.pieces[piece].type;
+      let isPawn = pieceType.includes('pawn');
+      let isEnPassant = false;
+      let capturedPawnPos = null;
       
+      // Check for en passant capture
+      if (isPawn && main.variables.enPassantTarget) {
+        let ep = main.variables.enPassantTarget;
+        let targetFile = parseInt(targetPos.split('_')[0]);
+        let targetRank = parseInt(targetPos.split('_')[1]);
+        
+        if (targetFile === ep.file && targetRank === ep.rank) {
+          isEnPassant = true;
+          // If white pawn moved (ep.color === 'w'), captured pawn is on rank ABOVE target (ep.rank + 1)
+          // If black pawn moved (ep.color === 'b'), captured pawn is on rank BELOW target (ep.rank - 1)
+          let capturedPawnRank = ep.color === 'w' ? ep.rank + 1 : ep.rank - 1;
+          capturedPawnPos = ep.file + '_' + capturedPawnRank;
+        }
+      }
+      
+      let originalPos = main.variables.pieces[piece].position;
+      let capturedPieceName = null;
+      let capturedPieceCaptured = false;
+      
+      // Simulate the move
       main.variables.pieces[piece].position = targetPos;
       
       if (piece === kingName) {
         kingPos = targetPos;
       }
       
+      // For en passant, temporarily mark the captured pawn as captured
+      if (isEnPassant && capturedPawnPos) {
+        for (let p in main.variables.pieces) {
+          if (main.variables.pieces[p].position === capturedPawnPos && main.variables.pieces[p].type.includes('pawn')) {
+            capturedPieceName = p;
+            capturedPieceCaptured = main.variables.pieces[p].captured;
+            main.variables.pieces[p].captured = true;
+            break;
+          }
+        }
+      }
+      
       let safe = !main.methods.isKingInCheck(kingPos, color);
       
+      // Restore state
       main.variables.pieces[piece].position = originalPos;
+      if (isEnPassant && capturedPieceName) {
+        main.variables.pieces[capturedPieceName].captured = capturedPieceCaptured;
+      }
       
       return safe;
     },
@@ -912,12 +1115,21 @@ let main = {
 
       if (type.includes('pawn')) {
         let dir = type.includes('w') ? 1 : -1;
+        let pawnColor = type.includes('w') ? 'w' : 'b';
         if (y + dir >= 1 && y + dir <= 8) {
           moves.push(x + '_' + (y + dir));
           if (!main.variables.pieces[piece].moved && y + 2 * dir >= 1 && y + 2 * dir <= 8) {
             if ($('#' + x + '_' + (y + dir)).attr('chess') === 'null') {
               moves.push(x + '_' + (y + 2 * dir));
             }
+          }
+        }
+        // En passant captures
+        if (main.variables.enPassantTarget) {
+          let ep = main.variables.enPassantTarget;
+          // Only allow en passant if the target pawn is the opposite color
+          if (ep.color !== pawnColor && ep.rank === y + dir && (ep.file === x - 1 || ep.file === x + 1)) {
+            moves.push(ep.file + '_' + ep.rank);
           }
         }
         if (x - 1 >= 1 && y + dir >= 1 && y + dir <= 8) moves.push((x - 1) + '_' + (y + dir));
@@ -1201,6 +1413,10 @@ let main = {
       main.variables.highlighted = [];
       main.variables.gameState = 'normal';
       main.variables.moveList = [];
+      // Reset new chess rule variables
+      main.variables.enPassantTarget = null;
+      main.variables.positionHistory = [];
+      main.variables.halfMoveClock = 0;
 
       // Clear any highlights on the board
       $('.gamecell').removeClass('green');
@@ -1217,6 +1433,111 @@ let main = {
 
       // Re-setup the game board
       main.methods.gamesetup();
+    },
+
+    // ===== NEW CHESS RULES =====
+
+    // Generate a position key for threefold repetition detection
+    getPositionKey: function() {
+      let pieces = [];
+      for (let piece in main.variables.pieces) {
+        if (!main.variables.pieces[piece].captured) {
+          pieces.push(piece + ':' + main.variables.pieces[piece].position);
+        }
+      }
+      pieces.sort();
+      let castling = '';
+      if (!main.variables.pieces.w_king.moved) {
+        if (!main.variables.pieces.w_rook1.moved) castling += 'K';
+        if (!main.variables.pieces.w_rook2.moved) castling += 'Q';
+      }
+      if (!main.variables.pieces.b_king.moved) {
+        if (!main.variables.pieces.b_rook1.moved) castling += 'k';
+        if (!main.variables.pieces.b_rook2.moved) castling += 'q';
+      }
+      let ep = main.variables.enPassantTarget ? main.variables.enPassantTarget.file + '_' + main.variables.enPassantTarget.rank : '-';
+      return pieces.join(';') + '|' + main.variables.turn + '|' + castling + '|' + ep;
+    },
+
+    // Check for threefold repetition
+    checkThreefoldRepetition: function() {
+      let key = main.methods.getPositionKey();
+      let count = 0;
+      for (let i = 0; i < main.variables.positionHistory.length; i++) {
+        if (main.variables.positionHistory[i] === key) count++;
+      }
+      return count >= 2; // Current position + 2 previous = 3 total
+    },
+
+    // Check for 50-move rule
+    checkFiftyMoveRule: function() {
+      return main.variables.halfMoveClock >= 100; // 50 moves = 100 half-moves
+    },
+
+    // Update position history for threefold repetition
+    updatePositionHistory: function() {
+      let key = main.methods.getPositionKey();
+      main.variables.positionHistory.push(key);
+    },
+
+    // Update half-move clock for 50-move rule
+    updateHalfMoveClock: function(isPawnMove, isCapture) {
+      if (isPawnMove || isCapture) {
+        main.variables.halfMoveClock = 0;
+      } else {
+        main.variables.halfMoveClock++;
+      }
+    },
+
+    // Reset en passant target
+    resetEnPassantTarget: function() {
+      main.variables.enPassantTarget = null;
+    },
+
+    // Set en passant target after a pawn moves two squares
+    setEnPassantTarget: function(pawn, fromPos, toPos) {
+      let fromFile = parseInt(fromPos.split('_')[0]);
+      let fromRank = parseInt(fromPos.split('_')[1]);
+      let toRank = parseInt(toPos.split('_')[1]);
+      
+      if (Math.abs(toRank - fromRank) === 2) {
+        let direction = pawn.type.startsWith('w') ? 1 : -1;
+        main.variables.enPassantTarget = {
+          file: fromFile,
+          rank: fromRank + direction,
+          color: pawn.type.startsWith('w') ? 'w' : 'b'
+        };
+      } else {
+        main.variables.enPassantTarget = null;
+      }
+    },
+
+    // Check if a move is an en passant capture
+    isEnPassantCapture: function(pawn, targetPos) {
+      if (!main.variables.enPassantTarget) return false;
+      let targetFile = parseInt(targetPos.split('_')[0]);
+      let targetRank = parseInt(targetPos.split('_')[1]);
+      return targetFile === main.variables.enPassantTarget.file && 
+             targetRank === main.variables.enPassantTarget.rank &&
+             pawn.type.startsWith(main.variables.enPassantTarget.color === 'w' ? 'b' : 'w');
+    },
+
+    // Handle en passant capture
+    handleEnPassantCapture: function(pawn, targetPos) {
+      let capturedPawnRank = pawn.type.startsWith('w') ? targetPos.split('_')[1] - 1 : parseInt(targetPos.split('_')[1]) + 1;
+      let capturedPawnPos = main.variables.enPassantTarget.file + '_' + capturedPawnRank;
+      
+      // Find and mark the captured pawn
+      for (let piece in main.variables.pieces) {
+        if (main.variables.pieces[piece].position === capturedPawnPos && 
+            main.variables.pieces[piece].type.startsWith(pawn.type.startsWith('w') ? 'b' : 'w') &&
+            main.variables.pieces[piece].type.includes('pawn')) {
+          main.variables.pieces[piece].captured = true;
+          $('#' + capturedPawnPos).html('');
+          $('#' + capturedPawnPos).attr('chess', 'null');
+          break;
+        }
+      }
     },
 
     offerDraw: function() {
@@ -1279,12 +1600,27 @@ $(document).ready(function() {
 
     } else if (main.variables.selectedpiece !='' && target.name == 'null') { // move selected piece piece
 
+      // Check if this is an en passant capture
+      let isEnPassantCapture = false;
+      if (main.variables.enPassantTarget) {
+        let ep = main.variables.enPassantTarget;
+        let targetFile = parseInt(target.id.split('_')[0]);
+        let targetRank = parseInt(target.id.split('_')[1]);
+        if (targetFile === ep.file && targetRank === ep.rank) {
+          isEnPassantCapture = true;
+        }
+      }
+
       // Check if move is valid (both legal chess move and doesn't leave king in check)
       if (main.variables.highlighted.indexOf(target.id) === -1 || !main.methods.isMoveValid(selectedpiece.name, target.id)) {
         return; // Illegal move - don't allow it
       }
 
-      if (selectedpiece.name == 'w_king' || selectedpiece.name == 'b_king'){
+      if (isEnPassantCapture) {
+        // En passant capture - call capture() instead of move()
+        main.methods.capture(target);
+        main.methods.endturn();
+      } else if (selectedpiece.name == 'w_king' || selectedpiece.name == 'b_king'){
         
         let t0 = (selectedpiece.name == 'w_king');
         let t1 = (selectedpiece.name == 'b_king');
