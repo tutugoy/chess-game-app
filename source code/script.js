@@ -10,6 +10,8 @@ let main = {
     enPassantTarget: null, // { file: x, rank: y, color: 'w'/'b' }
     positionHistory: [], // For threefold repetition
     halfMoveClock: 0, // For 50-move rule (half-moves since last pawn move/capture)
+    // Audio context for sound effects
+    audioContext: null,
     pieces: {
       w_king: {
         position: '5_1',
@@ -243,11 +245,83 @@ let main = {
 
   methods: {
     gamesetup: function() {
+      // Initialize audio context for sound effects
+      if (!main.variables.audioContext) {
+        main.variables.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
       $('.gamecell').attr('chess', 'null');
       for (let gamepiece in main.variables.pieces) {
         $('#' + main.variables.pieces[gamepiece].position).html(main.variables.pieces[gamepiece].img);
         $('#' + main.variables.pieces[gamepiece].position).attr('chess', gamepiece);
       }
+    },
+
+    // Sound effect functions using Web Audio API
+    playMoveSound: function() {
+      if (!main.variables.audioContext) return;
+      const ctx = main.variables.audioContext;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
+      osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.1); // Drop to A3
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    },
+
+    playCaptureSound: function() {
+      if (!main.variables.audioContext) return;
+      const ctx = main.variables.audioContext;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(330, ctx.currentTime); // E4
+      osc.frequency.exponentialRampToValueAtTime(165, ctx.currentTime + 0.15); // Drop to E3
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.15);
+    },
+
+    playCastleSound: function() {
+      if (!main.variables.audioContext) return;
+      const ctx = main.variables.audioContext;
+      // Play two quick notes for castling
+      [440, 554].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, ctx.currentTime + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.08 + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.08);
+        osc.stop(ctx.currentTime + i * 0.08 + 0.08);
+      });
+    },
+
+    playCheckSound: function() {
+      if (!main.variables.audioContext) return;
+      const ctx = main.variables.audioContext;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(660, ctx.currentTime); // E5
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2); // A5
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
     },
 
     moveoptions: function(selectedpiece) {
@@ -718,6 +792,9 @@ let main = {
         main.variables.pieces[target.name].captured = true;
       }
       
+      // Play capture sound
+      main.methods.playCaptureSound();
+      
       // Update half-move clock: reset on capture or pawn move
       if (isPawn || !isEnPassant) {
         main.variables.halfMoveClock = 0;
@@ -763,6 +840,9 @@ let main = {
       $('#' + main.variables.selectedpiece).attr('chess','null');
       main.variables.pieces[selectedpiece].position = target.id;
       main.variables.pieces[selectedpiece].moved = true;
+      
+      // Play move sound
+      main.methods.playMoveSound();
       
       // Update half-move clock: reset on pawn move, increment otherwise
       if (isPawn) {
@@ -1672,6 +1752,13 @@ $(document).ready(function() {
           $('#'+r_target).html(main.variables.pieces['w_rook2'].img);
           $('#'+r_target).attr('chess','w_rook2');
 
+          // Play move sound for castling
+          let moveSound = document.getElementById('move-sound');
+          if (moveSound) {
+            moveSound.currentTime = 0;
+            moveSound.play().catch(e => console.log('Move sound play failed:', e));
+          }
+          
           // Add move to list
           main.methods.addMoveToList(selectedpiece.name, k_position, k_target, false, false);
           
@@ -1699,6 +1786,13 @@ $(document).ready(function() {
           $('#'+r_target).html(main.variables.pieces['b_rook2'].img);
           $('#'+r_target).attr('chess','b_rook2');
 
+          // Play move sound for castling
+          let moveSound = document.getElementById('move-sound');
+          if (moveSound) {
+            moveSound.currentTime = 0;
+            moveSound.play().catch(e => console.log('Move sound play failed:', e));
+          }
+          
           // Add move to list
           main.methods.addMoveToList(selectedpiece.name, k_position, k_target, false, false);
           
