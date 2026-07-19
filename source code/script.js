@@ -1076,8 +1076,14 @@ let main = {
       let capturedPieceName = null;
       let capturedPieceCaptured = false;
       
-      // Simulate the move
+      // Simulate the move - update both piece position and DOM
       main.variables.pieces[piece].position = targetPos;
+      // Update DOM for simulation
+      let pieceImg = $('#' + originalPos).html();
+      $('#' + targetPos).html(pieceImg);
+      $('#' + targetPos).attr('chess', piece);
+      $('#' + originalPos).html('');
+      $('#' + originalPos).attr('chess', 'null');
       
       if (piece === kingName) {
         kingPos = targetPos;
@@ -1090,6 +1096,9 @@ let main = {
             capturedPieceName = p;
             capturedPieceCaptured = main.variables.pieces[p].captured;
             main.variables.pieces[p].captured = true;
+            // Also update DOM for en passant captured pawn
+            $('#' + capturedPawnPos).html('');
+            $('#' + capturedPawnPos).attr('chess', 'null');
             break;
           }
         }
@@ -1097,10 +1106,20 @@ let main = {
       
       let safe = !main.methods.isKingInCheck(kingPos, color);
       
-      // Restore state
+      // Restore state - both piece positions and DOM
       main.variables.pieces[piece].position = originalPos;
+      // Restore DOM
+      $('#' + originalPos).html(pieceImg);
+      $('#' + originalPos).attr('chess', piece);
+      $('#' + targetPos).html('');
+      $('#' + targetPos).attr('chess', 'null');
+      
       if (isEnPassant && capturedPieceName) {
         main.variables.pieces[capturedPieceName].captured = capturedPieceCaptured;
+        // Restore DOM for en passant captured pawn
+        let capturedPawnImg = main.variables.pieces[capturedPieceName].img;
+        $('#' + capturedPawnPos).html(capturedPawnImg);
+        $('#' + capturedPawnPos).attr('chess', capturedPieceName);
       }
       
       return safe;
