@@ -1075,6 +1075,8 @@ let main = {
       let originalPos = main.variables.pieces[piece].position;
       let capturedPieceName = null;
       let capturedPieceCaptured = false;
+      let targetPieceImg = $('#' + targetPos).html(); // Save target piece HTML for restoration
+      let targetPieceChess = $('#' + targetPos).attr('chess'); // Save target piece chess attr
       
       // Simulate the move - update both piece position and DOM
       main.variables.pieces[piece].position = targetPos;
@@ -1111,8 +1113,8 @@ let main = {
       // Restore DOM
       $('#' + originalPos).html(pieceImg);
       $('#' + originalPos).attr('chess', piece);
-      $('#' + targetPos).html('');
-      $('#' + targetPos).attr('chess', 'null');
+      $('#' + targetPos).html(targetPieceImg);
+      $('#' + targetPos).attr('chess', targetPieceChess);
       
       if (isEnPassant && capturedPieceName) {
         main.variables.pieces[capturedPieceName].captured = capturedPieceCaptured;
