@@ -30,6 +30,12 @@ A fully-featured chess game built with vanilla JavaScript, jQuery, and CSS. Feat
   - Half-move clock resets on pawn moves and captures
   - Draws after 100 half-moves (50 full moves) without progress
   - Alert notification on draw
+- **Insufficient Material**: Automatic draw detection
+  - King vs King
+  - King + Bishop vs King
+  - King + Knight vs King
+  - King + Bishop vs King + Bishop (same color squares)
+  - Alert notification on draw
 - **Draw by Agreement**: "Offer Draw" button with confirmation
 - **Resignation**: "Resign" button with confirmation dialog
 

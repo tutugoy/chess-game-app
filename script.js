@@ -908,6 +908,15 @@ let main = {
           alert('Draw by 50-move rule!');
           return;
         }
+        
+        
+        if (main.methods.checkInsufficientMaterial()) {
+          main.variables.gameState = 'draw';
+          $('#status-display').html('DRAW BY INSUFFICIENT MATERIAL').removeClass().addClass('draw');
+          $('#turn-display').html('Game Over - Draw');
+          alert('Draw by insufficient material!');
+          return;
+        }
 
         main.methods.updateGameState();
 
@@ -946,6 +955,15 @@ let main = {
           $('#status-display').html('DRAW BY 50-MOVE RULE').removeClass().addClass('draw');
           $('#turn-display').html('Game Over - Draw');
           alert('Draw by 50-move rule!');
+          return;
+        }
+        
+        
+        if (main.methods.checkInsufficientMaterial()) {
+          main.variables.gameState = 'draw';
+          $('#status-display').html('DRAW BY INSUFFICIENT MATERIAL').removeClass().addClass('draw');
+          $('#turn-display').html('Game Over - Draw');
+          alert('Draw by insufficient material!');
           return;
         }
 
@@ -1592,6 +1610,58 @@ let main = {
     
     checkFiftyMoveRule: function() {
       return main.variables.halfMoveClock >= 100; 
+    },
+
+    
+    checkInsufficientMaterial: function() {
+      let whitePieces = [];
+      let blackPieces = [];
+      
+      for (let pieceName in main.variables.pieces) {
+        let piece = main.variables.pieces[pieceName];
+        if (!piece.captured) {
+          if (piece.type.startsWith('w')) {
+            whitePieces.push(piece.type);
+          } else {
+            blackPieces.push(piece.type);
+          }
+        }
+      }
+      
+      let whiteNonKing = whitePieces.filter(p => !p.includes('king'));
+      let blackNonKing = blackPieces.filter(p => !p.includes('king'));
+      
+      if (whiteNonKing.length === 0 && blackNonKing.length === 0) {
+        return true;
+      }
+      
+      if (whiteNonKing.length === 0) {
+        if (blackNonKing.length === 1) {
+          let piece = blackNonKing[0];
+          if (piece.includes('bishop') || piece.includes('knight')) {
+            return true;
+          }
+        }
+      }
+      
+      if (blackNonKing.length === 0) {
+        if (whiteNonKing.length === 1) {
+          let piece = whiteNonKing[0];
+          if (piece.includes('bishop') || piece.includes('knight')) {
+            return true;
+          }
+        }
+      }
+      
+      if (whiteNonKing.length === 1 && blackNonKing.length === 1) {
+        let whitePiece = whiteNonKing[0];
+        let blackPiece = blackNonKing[0];
+        if (whitePiece.includes('bishop') && blackPiece.includes('bishop')) {
+          return true;
+        }
+      }
+      
+      return false;
     },
 
     
