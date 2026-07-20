@@ -1046,7 +1046,14 @@ let main = {
       }
       
       // Add to move list
-      let moveNumber = Math.floor(main.variables.moveList.length / 2) + 1;
+      let moveNumber;
+      if (color === 'w') {
+        // White's move number = number of completed pairs + 1 = moveList.length + 1
+        moveNumber = main.variables.moveList.length + 1;
+      } else {
+        // Black's move number = same as the white move it's paired with = moveList.length
+        moveNumber = main.variables.moveList.length;
+      }
       
       if (color === 'w') {
         // White's move - start new move
@@ -1171,6 +1178,13 @@ let main = {
         kingPos = targetPos;
       }
       
+      // For regular captures, temporarily mark the captured piece as captured
+      if (targetPieceChess !== 'null' && targetPieceChess.slice(0,1) !== color) {
+        capturedPieceName = targetPieceChess;
+        capturedPieceCaptured = main.variables.pieces[targetPieceChess].captured;
+        main.variables.pieces[targetPieceChess].captured = true;
+      }
+      
       // For en passant, temporarily mark the captured pawn as captured
       if (isEnPassant && capturedPawnPos) {
         for (let p in main.variables.pieces) {
@@ -1195,6 +1209,11 @@ let main = {
       $('#' + originalPos).attr('chess', piece);
       $('#' + targetPos).html(targetPieceImg);
       $('#' + targetPos).attr('chess', targetPieceChess);
+      
+      // Restore captured piece for regular captures
+      if (capturedPieceName && !isEnPassant) {
+        main.variables.pieces[capturedPieceName].captured = capturedPieceCaptured;
+      }
       
       if (isEnPassant && capturedPieceName) {
         main.variables.pieces[capturedPieceName].captured = capturedPieceCaptured;
