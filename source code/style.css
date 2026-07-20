@@ -18,7 +18,6 @@ body {
   image-rendering: crisp-edges;
 }
 
-/* CRT Scanline Overlay - Monochrome */
 body::before {
   content: "";
   position: fixed;
@@ -38,7 +37,6 @@ body::before {
   opacity: 0.5;
 }
 
-/* Vignette Effect - Monochrome */
 body::after {
   content: "";
   position: fixed;
@@ -102,7 +100,6 @@ body::after {
   text-shadow: 0 0 5px #fff, 0 0 10px #fff;
 }
 
-/* Rank labels (8-1) - positioned in column 1, rows 1-8 */
 .rank-8 { grid-row: 1; grid-column: 1; }
 .rank-7 { grid-row: 2; grid-column: 1; }
 .rank-6 { grid-row: 3; grid-column: 1; }
@@ -112,7 +109,6 @@ body::after {
 .rank-2 { grid-row: 7; grid-column: 1; }
 .rank-1 { grid-row: 8; grid-column: 1; }
 
-/* File labels (a-h) - positioned in row 9, columns 2-9 */
 .file-a { grid-row: 9; grid-column: 2; }
 .file-b { grid-row: 9; grid-column: 3; }
 .file-c { grid-row: 9; grid-column: 4; }
@@ -530,7 +526,6 @@ body::after {
   text-shadow: 0 0 5px #fff, 0 0 10px #fff;
 }
 
-/* Scrollbar styling for 8-bit feel */
 #move-list-container::-webkit-scrollbar {
   width: 12px;
 }
@@ -554,26 +549,22 @@ body::after {
   background: #111;
 }
 
-/* Selection styling */
 ::selection {
   background: rgba(255, 255, 255, 0.3);
   color: #000;
 }
 
-/* Focus styles for accessibility */
 button:focus,
 .gamecell:focus {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
 
-/* Pixel art piece rendering enhancement */
 .gamecell {
   font-variant-emoji: text;
   line-height: 1;
 }
 
-/* CRT flicker effect on pieces */
 @keyframes crtFlicker {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.98; }
