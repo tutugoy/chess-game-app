@@ -12,6 +12,14 @@ let main = {
     halfMoveClock: 0, 
     
     audioContext: null,
+    
+    // CPU/Stockfish variables
+    gameMode: 'pvp', // 'pvp', 'pvc', 'cvp'
+    cpuDifficulty: 20,
+    stockfish: null,
+    isCpuThinking: false,
+    cpuColor: null,
+    
     pieces: {
       w_king: {
         position: '5_1',
@@ -250,10 +258,27 @@ let main = {
         main.variables.audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
       
+      main.methods.initStockfish();
+      
+      main.variables.gameMode = $('#game-mode').val() || 'pvp';
+      main.variables.cpuDifficulty = parseInt($('#cpu-difficulty').val()) || 20;
+      
+      if (main.variables.gameMode === 'pvc') {
+        main.variables.cpuColor = 'b';
+      } else if (main.variables.gameMode === 'cvp') {
+        main.variables.cpuColor = 'w';
+      } else {
+        main.variables.cpuColor = null;
+      }
+      
       $('.gamecell').attr('chess', 'null');
       for (let gamepiece in main.variables.pieces) {
         $('#' + main.variables.pieces[gamepiece].position).html(main.variables.pieces[gamepiece].img);
         $('#' + main.variables.pieces[gamepiece].position).attr('chess', gamepiece);
+      }
+      
+      if (main.variables.cpuColor === 'w') {
+        setTimeout(() => main.methods.triggerCpuMove(), 500);
       }
     },
 
@@ -920,6 +945,11 @@ let main = {
 
         main.methods.updateGameState();
 
+      // Trigger CPU move if it's CPU's turn
+      if (main.variables.cpuColor === main.variables.turn && main.variables.gameMode !== 'pvp') {
+        setTimeout(() => main.methods.triggerCpuMove(), 300);
+      }
+
       } else if (main.variables.turn == 'b'){
         main.variables.turn = 'w';
 
@@ -968,6 +998,11 @@ let main = {
         }
 
         main.methods.updateGameState();
+
+      // Trigger CPU move if it's CPU's turn
+      if (main.variables.cpuColor === main.variables.turn && main.variables.gameMode !== 'pvp') {
+        setTimeout(() => main.methods.triggerCpuMove(), 300);
+      }
 
       }
 
@@ -1555,7 +1590,23 @@ let main = {
       main.variables.enPassantTarget = null;
       main.variables.positionHistory = [];
       main.variables.halfMoveClock = 0;
-
+      
+      main.variables.isCpuThinking = false;
+      
+      main.variables.gameMode = $('#game-mode').val() || 'pvp';
+      main.variables.cpuDifficulty = parseInt($('#cpu-difficulty').val()) || 20;
+      
+      if (main.variables.gameMode === 'pvc') {
+        main.variables.cpuColor = 'b';
+      } else if (main.variables.gameMode === 'cvp') {
+        main.variables.cpuColor = 'w';
+      } else {
+        main.variables.cpuColor = null;
+      }
+      
+      if (main.variables.stockfish) {
+        main.variables.stockfish.postMessage('setoption name Skill Level value ' + main.variables.cpuDifficulty);
+      }
       
       $('.gamecell').removeClass('green');
 
@@ -1727,6 +1778,173 @@ let main = {
           $('#' + capturedPawnPos).attr('chess', 'null');
           break;
         }
+      }
+    },
+
+    getFenFromPosition: function() {
+      let board = Array(8).fill().map(() => Array(8).fill(''));
+      
+      for (let pieceName in main.variables.pieces) {
+        let piece = main.variables.pieces[pieceName];
+        if (!piece.captured) {
+          let file = parseInt(piece.position.split('_')[0]) - 1;
+          let rank = 8 - parseInt(piece.position.split('_')[1]);
+          let fenChar = '';
+          if (piece.type === 'w_king') fenChar = 'K';
+          else if (piece.type === 'w_queen') fenChar = 'Q';
+          else if (piece.type === 'w_rook') fenChar = 'R';
+          else if (piece.type === 'w_bishop') fenChar = 'B';
+          else if (piece.type === 'w_knight') fenChar = 'N';
+          else if (piece.type === 'w_pawn') fenChar = 'P';
+          else if (piece.type === 'b_king') fenChar = 'k';
+          else if (piece.type === 'b_queen') fenChar = 'q';
+          else if (piece.type === 'b_rook') fenChar = 'r';
+          else if (piece.type === 'b_bishop') fenChar = 'b';
+          else if (piece.type === 'b_knight') fenChar = 'n';
+          else if (piece.type === 'b_pawn') fenChar = 'p';
+          board[rank][file] = fenChar;
+        }
+      }
+      
+      let fenRows = [];
+      for (let r = 0; r < 8; r++) {
+        let row = '';
+        let emptyCount = 0;
+        for (let f = 0; f < 8; f++) {
+          if (board[r][f] === '') {
+            emptyCount++;
+          } else {
+            if (emptyCount > 0) {
+              row += emptyCount;
+              emptyCount = 0;
+            }
+            row += board[r][f];
+          }
+        }
+        if (emptyCount > 0) row += emptyCount;
+        fenRows.push(row);
+      }
+      
+      let fen = fenRows.join('/') + ' ' + main.variables.turn + ' ';
+      
+      let castling = '';
+      if (!main.variables.pieces.w_king.moved) {
+        if (!main.variables.pieces.w_rook1.moved) castling += 'K';
+        if (!main.variables.pieces.w_rook2.moved) castling += 'Q';
+      }
+      if (!main.variables.pieces.b_king.moved) {
+        if (!main.variables.pieces.b_rook1.moved) castling += 'k';
+        if (!main.variables.pieces.b_rook2.moved) castling += 'q';
+      }
+      fen += (castling || '-') + ' ';
+      
+      if (main.variables.enPassantTarget) {
+        let file = String.fromCharCode(96 + main.variables.enPassantTarget.file);
+        let rank = main.variables.enPassantTarget.rank;
+        fen += file + rank;
+      } else {
+        fen += '-';
+      }
+      
+      fen += ' ' + main.variables.halfMoveClock + ' ' + Math.floor(main.variables.moveList.length / 2) + 1;
+      
+      return fen;
+    },
+
+    initStockfish: function() {
+      if (typeof Stockfish !== 'undefined') {
+        main.variables.stockfish = Stockfish();
+        main.variables.stockfish.onmessage = function(event) {
+          let line = event.data;
+          if (line.startsWith('bestmove')) {
+            let move = line.split(' ')[1];
+            if (move && move !== '(none)') {
+              main.methods.makeCpuMove(move);
+            }
+            main.variables.isCpuThinking = false;
+            main.methods.updateGameState();
+          }
+        };
+      }
+    },
+
+    makeCpuMove: function(uciMove) {
+      let fromFile = uciMove.charCodeAt(0) - 96;
+      let fromRank = parseInt(uciMove[1]);
+      let toFile = uciMove.charCodeAt(2) - 96;
+      let toRank = parseInt(uciMove[3]);
+      
+      let fromPos = fromFile + '_' + fromRank;
+      let toPos = toFile + '_' + toRank;
+      
+      let pieceName = $('#' + fromPos).attr('chess');
+      if (!pieceName || pieceName === 'null') return;
+      
+      let target = { name: $('#' + toPos).attr('chess'), id: toPos };
+      
+      if (pieceName === 'w_king' || pieceName === 'b_king') {
+        if (Math.abs(fromFile - toFile) === 2) {
+          main.methods.move(target);
+          main.methods.endturn();
+          return;
+        }
+      }
+      
+      if (main.variables.enPassantTarget && 
+          main.variables.enPassantTarget.file === toFile && 
+          main.variables.enPassantTarget.rank === toRank &&
+          (pieceName.includes('pawn'))) {
+        main.methods.capture(target);
+        main.methods.endturn();
+        return;
+      }
+      
+      if (target.name !== 'null') {
+        main.methods.capture(target);
+      } else {
+        main.methods.move(target);
+      }
+      main.methods.endturn();
+    },
+
+    triggerCpuMove: function() {
+      if (main.variables.isCpuThinking || !main.variables.stockfish) return;
+      
+      if (main.variables.gameMode !== 'pvp' && main.variables.turn === main.variables.cpuColor) {
+        main.variables.isCpuThinking = true;
+        $('#status-display').html('CPU THINKING...').removeClass().addClass('check');
+        
+        let fen = main.methods.getFenFromPosition();
+        main.variables.stockfish.postMessage('position fen ' + fen);
+        let depth = parseInt($('#cpu-difficulty').val()) || 15;
+        main.variables.stockfish.postMessage('go depth ' + depth);
+      }
+    },
+
+    setGameMode: function(mode) {
+      main.variables.gameMode = mode || 'pvp';
+      main.variables.cpuDifficulty = parseInt($('#cpu-difficulty').val()) || 20;
+      
+      if (main.variables.gameMode === 'pvc') {
+        main.variables.cpuColor = 'b';
+      } else if (main.variables.gameMode === 'cvp') {
+        main.variables.cpuColor = 'w';
+      } else {
+        main.variables.cpuColor = null;
+      }
+      
+      if (main.variables.stockfish) {
+        main.variables.stockfish.postMessage('setoption name Skill Level value ' + main.variables.cpuDifficulty);
+      }
+      
+      // Restart game with new mode
+      main.methods.restart();
+    },
+
+    setCpuDifficulty: function(difficulty) {
+      main.variables.cpuDifficulty = difficulty || 20;
+      if (main.variables.stockfish) {
+        main.variables.stockfish.postMessage('setoption name Skill Level value ' + main.variables.cpuDifficulty);
       }
     },
 
@@ -1925,6 +2143,20 @@ $(document).ready(function() {
 
     }
 
+  });
+
+  $('body').contextmenu(function(e) {
+    e.preventDefault();
+  });
+
+  // Game mode change handler
+  $('#game-mode').change(function() {
+    main.methods.setGameMode($(this).val());
+  });
+
+  // CPU difficulty change handler
+  $('#cpu-difficulty').change(function() {
+    main.methods.setCpuDifficulty(parseInt($(this).val()));
   });
 
   $('body').contextmenu(function(e) {
