@@ -1852,10 +1852,14 @@ let main = {
     },
 
     initStockfish: function() {
-      if (typeof Stockfish !== 'undefined') {
-        main.variables.stockfish = Stockfish();
+      // Stockfish.js is designed to be used as a Web Worker
+      // Create a worker from the local file
+      try {
+        main.variables.stockfish = new Worker('./stockfish.js');
         main.variables.stockfish.onmessage = function(event) {
           let line = event.data;
+          // Ignore undefined or non-string messages during initialization
+          if (!line || typeof line !== 'string') return;
           if (line.startsWith('bestmove')) {
             let move = line.split(' ')[1];
             if (move && move !== '(none)') {
@@ -1865,6 +1869,11 @@ let main = {
             main.methods.updateGameState();
           }
         };
+        // Initialize UCI
+        main.variables.stockfish.postMessage('uci');
+        main.variables.stockfish.postMessage('isready');
+      } catch (e) {
+        console.error('Failed to initialize Stockfish:', e);
       }
     },
 
@@ -1879,6 +1888,9 @@ let main = {
       
       let pieceName = $('#' + fromPos).attr('chess');
       if (!pieceName || pieceName === 'null') return;
+      
+      // Set selectedpiece so move/capture functions work correctly
+      main.variables.selectedpiece = fromPos;
       
       let target = { name: $('#' + toPos).attr('chess'), id: toPos };
       
