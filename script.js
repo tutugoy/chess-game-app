@@ -23,6 +23,12 @@ let main = {
     // Board flip state
     boardFlipped: false,
     
+    // Chess clock variables
+    whiteTime: 600000, // 10 minutes in milliseconds
+    blackTime: 600000, // 10 minutes in milliseconds
+    clockInterval: null,
+    clockRunning: false,
+    
     pieces: {
       w_king: {
         position: '5_1',
@@ -286,6 +292,11 @@ let main = {
       }
       
       main.methods.updateBoardLabels();
+      
+      // Start clock for PvP games
+      if (main.variables.gameMode === 'pvp') {
+        main.methods.startClock();
+      }
     },
 
     // Board flip methods
@@ -293,6 +304,30 @@ let main = {
       main.variables.boardFlipped = !main.variables.boardFlipped;
       main.methods.renderBoard();
       main.methods.updateBoardLabels();
+      main.methods.flipClocks();
+    },
+
+    flipClocks: function() {
+      // Swap the clock labels and times when board is flipped
+      const $clockTop = $('#clock-top');
+      const $clockBottom = $('#clock-bottom');
+      
+      if (main.variables.boardFlipped) {
+        // Board is flipped - White is at top, Black at bottom
+        $clockTop.find('.clock-label').text('White');
+        $clockTop.find('.clock-time').attr('id', 'clock-white');
+        $clockBottom.find('.clock-label').text('Black');
+        $clockBottom.find('.clock-time').attr('id', 'clock-black');
+      } else {
+        // Normal orientation - Black at top, White at bottom
+        $clockTop.find('.clock-label').text('Black');
+        $clockTop.find('.clock-time').attr('id', 'clock-black');
+        $clockBottom.find('.clock-label').text('White');
+        $clockBottom.find('.clock-time').attr('id', 'clock-white');
+      }
+      
+      // Update the display with current times
+      main.methods.updateClockDisplay();
     },
 
     renderBoard: function() {
@@ -359,6 +394,119 @@ let main = {
         for (let i = 0; i < 8; i++) {
           $('.file-' + files[i]).text(files[i]);
         }
+      }
+    },
+
+    flipClocks: function() {
+      // Swap the clock labels and times when board is flipped
+      const $clockTop = $('#clock-top');
+      const $clockBottom = $('#clock-bottom');
+      
+      if (main.variables.boardFlipped) {
+        // Board is flipped - White is at top, Black at bottom
+        $clockTop.find('.clock-label').text('White');
+        $clockTop.find('.clock-time').attr('id', 'clock-white');
+        $clockBottom.find('.clock-label').text('Black');
+        $clockBottom.find('.clock-time').attr('id', 'clock-black');
+      } else {
+        // Normal orientation - Black at top, White at bottom
+        $clockTop.find('.clock-label').text('Black');
+        $clockTop.find('.clock-time').attr('id', 'clock-black');
+        $clockBottom.find('.clock-label').text('White');
+        $clockBottom.find('.clock-time').attr('id', 'clock-white');
+      }
+      
+      // Update the display with current times
+      main.methods.updateClockDisplay();
+    },
+
+    // Chess Clock Methods
+    startClock: function() {
+      if (main.variables.clockRunning) return;
+      
+      main.variables.clockRunning = true;
+      main.variables.clockInterval = setInterval(function() {
+        if (main.variables.turn === 'w') {
+          main.variables.whiteTime -= 1000;
+          if (main.variables.whiteTime <= 0) {
+            main.variables.whiteTime = 0;
+            main.methods.clockTimeout('w');
+            return;
+          }
+        } else {
+          main.variables.blackTime -= 1000;
+          if (main.variables.blackTime <= 0) {
+            main.variables.blackTime = 0;
+            main.methods.clockTimeout('b');
+            return;
+          }
+        }
+        main.methods.updateClockDisplay();
+        main.methods.updateClockWarnings();
+      }, 1000);
+    },
+
+    stopClock: function() {
+      if (main.variables.clockInterval) {
+        clearInterval(main.variables.clockInterval);
+        main.variables.clockInterval = null;
+      }
+      main.variables.clockRunning = false;
+    },
+
+    switchClock: function() {
+      main.methods.stopClock();
+      main.methods.startClock();
+    },
+
+    updateClockDisplay: function() {
+      const whiteMinutes = Math.floor(main.variables.whiteTime / 60000);
+      const whiteSeconds = Math.floor((main.variables.whiteTime % 60000) / 1000);
+      const blackMinutes = Math.floor(main.variables.blackTime / 60000);
+      const blackSeconds = Math.floor((main.variables.blackTime % 60000) / 1000);
+      
+      const whiteTimeStr = whiteMinutes.toString().padStart(2, '0') + ':' + whiteSeconds.toString().padStart(2, '0');
+      const blackTimeStr = blackMinutes.toString().padStart(2, '0') + ':' + blackSeconds.toString().padStart(2, '0');
+      
+      $('#clock-white').text(whiteTimeStr);
+      $('#clock-black').text(blackTimeStr);
+    },
+
+    updateClockWarnings: function() {
+      const $clockTop = $('#clock-top');
+      const $clockBottom = $('#clock-bottom');
+      
+      // Remove all warning classes
+      $clockTop.removeClass('time-warning time-critical');
+      $clockBottom.removeClass('time-warning time-critical');
+      
+      // Check white time
+      if (main.variables.whiteTime <= 30000) { // 30 seconds
+        $('#clock-white').closest('.chess-clock').addClass('time-critical');
+      } else if (main.variables.whiteTime <= 60000) { // 1 minute
+        $('#clock-white').closest('.chess-clock').addClass('time-warning');
+      }
+      
+      // Check black time
+      if (main.variables.blackTime <= 30000) { // 30 seconds
+        $('#clock-black').closest('.chess-clock').addClass('time-critical');
+      } else if (main.variables.blackTime <= 60000) { // 1 minute
+        $('#clock-black').closest('.chess-clock').addClass('time-warning');
+      }
+    },
+
+    clockTimeout: function(color) {
+      main.methods.stopClock();
+      main.variables.gameState = 'checkmate';
+      
+      if (color === 'w') {
+        $('#status-display').html('BLACK WINS - WHITE FLAGGED').removeClass().addClass('checkmate');
+        $('#turn-display').html('Game Over - Black Wins on Time');
+        alert('Black wins! White ran out of time.');
+      } else {
+        $('#status-display').html('WHITE WINS - BLACK FLAGGED').removeClass().addClass('checkmate');
+        $('#turn-display').html('Game Over - White Wins on Time');
+        alert('White wins! Black ran out of time.');
       }
     },
 
@@ -995,6 +1143,9 @@ let main = {
     },
 
     endturn: function(){
+      
+      // Switch chess clocks - stop current player's clock, start opponent's clock
+      main.methods.switchClock();
 
       if (main.variables.turn == 'w') {
         main.variables.turn = 'b';
@@ -1108,6 +1259,129 @@ let main = {
 
     },
 
+    // Chess Clock Methods
+    startClock: function() {
+      if (main.variables.clockRunning) return;
+      
+      main.variables.clockRunning = true;
+      main.variables.clockInterval = setInterval(function() {
+        if (main.variables.turn === 'w') {
+          main.variables.whiteTime -= 1000;
+          if (main.variables.whiteTime <= 0) {
+            main.variables.whiteTime = 0;
+            main.methods.clockTimeout('w');
+            return;
+          }
+        } else {
+          main.variables.blackTime -= 1000;
+          if (main.variables.blackTime <= 0) {
+            main.variables.blackTime = 0;
+            main.methods.clockTimeout('b');
+            return;
+          }
+        }
+        main.methods.updateClockDisplay();
+      }, 1000);
+      
+      // Update active clock visual
+      main.methods.updateClockActive();
+    },
+
+    stopClock: function() {
+      if (main.variables.clockInterval) {
+        clearInterval(main.variables.clockInterval);
+        main.variables.clockInterval = null;
+      }
+      main.variables.clockRunning = false;
+      $('#clock-top').removeClass('active');
+      $('#clock-bottom').removeClass('active');
+    },
+
+    switchClock: function() {
+      // Stop current clock, start opponent's clock
+      main.methods.stopClock();
+      
+      // Only start clock for player vs player games
+      if (main.variables.gameMode === 'pvp' && main.variables.gameState === 'normal') {
+        main.methods.startClock();
+      }
+    },
+
+    updateClockDisplay: function() {
+      const whiteMinutes = Math.floor(main.variables.whiteTime / 60000);
+      const whiteSeconds = Math.floor((main.variables.whiteTime % 60000) / 1000);
+      const blackMinutes = Math.floor(main.variables.blackTime / 60000);
+      const blackSeconds = Math.floor((main.variables.blackTime % 60000) / 1000);
+      
+      const whiteTimeStr = whiteMinutes.toString().padStart(2, '0') + ':' + whiteSeconds.toString().padStart(2, '0');
+      const blackTimeStr = blackMinutes.toString().padStart(2, '0') + ':' + blackSeconds.toString().padStart(2, '0');
+      
+      $('#clock-white').text(whiteTimeStr);
+      $('#clock-black').text(blackTimeStr);
+      
+      // Update warning classes
+      main.methods.updateClockWarnings();
+    },
+
+    updateClockWarnings: function() {
+      const $whiteClock = $('#clock-white').closest('.chess-clock');
+      const $blackClock = $('#clock-black').closest('.chess-clock');
+      
+      // Remove existing warning classes
+      $whiteClock.removeClass('time-warning time-critical');
+      $blackClock.removeClass('time-warning time-critical');
+      
+      // White clock warnings
+      if (main.variables.whiteTime <= 30000) { // 30 seconds
+        $whiteClock.addClass('time-critical');
+      } else if (main.variables.whiteTime <= 60000) { // 1 minute
+        $whiteClock.addClass('time-warning');
+      }
+      
+      // Black clock warnings
+      if (main.variables.blackTime <= 30000) { // 30 seconds
+        $blackClock.addClass('time-critical');
+      } else if (main.variables.blackTime <= 60000) { // 1 minute
+        $blackClock.addClass('time-warning');
+      }
+    },
+
+    updateClockActive: function() {
+      $('#clock-top').removeClass('active');
+      $('#clock-bottom').removeClass('active');
+      
+      if (main.variables.turn === 'w') {
+        // White's turn - highlight white's clock
+        if (main.variables.boardFlipped) {
+          $('#clock-top').addClass('active');
+        } else {
+          $('#clock-bottom').addClass('active');
+        }
+      } else {
+        // Black's turn - highlight black's clock
+        if (main.variables.boardFlipped) {
+          $('#clock-bottom').addClass('active');
+        } else {
+          $('#clock-top').addClass('active');
+        }
+      }
+    },
+
+    clockTimeout: function(color) {
+      main.methods.stopClock();
+      main.variables.gameState = 'checkmate';
+      
+      if (color === 'w') {
+        $('#status-display').html('BLACK WINS - WHITE FLAGGED').removeClass().addClass('checkmate');
+        $('#turn-display').html('Game Over - Black Wins on Time');
+      } else {
+        $('#status-display').html('WHITE WINS - BLACK FLAGGED').removeClass().addClass('checkmate');
+        $('#turn-display').html('Game Over - White Wins on Time');
+      }
+      
+      alert(color === 'w' ? 'White ran out of time! Black wins!' : 'Black ran out of time! White wins!');
+    },
+
     updateGameState: function(){
       let kingColor = main.variables.turn;
       let kingName = kingColor === 'w' ? 'w_king' : 'b_king';
@@ -1208,28 +1482,46 @@ let main = {
         moveNumber = main.variables.moveList.length;
       }
       
+      // Store detailed move info for take back functionality
+      const moveInfo = {
+        piece: pieceName,
+        from: fromPos,
+        to: toPos,
+        captured: captured,
+        notation: moveNotation,
+        color: color
+      };
+      
       if (color === 'w') {
         
         main.variables.moveList.push({
           number: moveNumber,
           white: moveNotation,
-          black: ''
+          black: '',
+          whiteMove: moveInfo
         });
       } else {
         
         if (main.variables.moveList.length > 0 && main.variables.moveList[main.variables.moveList.length - 1].black === '') {
           main.variables.moveList[main.variables.moveList.length - 1].black = moveNotation;
+          main.variables.moveList[main.variables.moveList.length - 1].blackMove = moveInfo;
         } else {
           main.variables.moveList.push({
             number: moveNumber,
             white: '',
-            black: moveNotation
+            black: moveNotation,
+            blackMove: moveInfo
           });
         }
       }
       
       
       main.methods.updateMoveListDisplay();
+      
+      // Enable takeback button after a move is made (in PvP mode)
+      if (main.variables.gameMode === 'pvp') {
+        $('#takeback-btn').prop('disabled', false);
+      }
     },
 
     updateMoveListDisplay: function() {
@@ -1698,6 +1990,18 @@ let main = {
       
       main.variables.isCpuThinking = false;
       
+      // Reset chess clocks
+      main.variables.whiteTime = 600000;
+      main.variables.blackTime = 600000;
+      main.variables.clockRunning = false;
+      if (main.variables.clockInterval) {
+        clearInterval(main.variables.clockInterval);
+        main.variables.clockInterval = null;
+      }
+      main.methods.updateClockDisplay();
+      $('#clock-top').removeClass('active time-warning time-critical');
+      $('#clock-bottom').removeClass('active time-warning time-critical');
+      
       main.variables.gameMode = $('#game-mode').val() || 'pvp';
       main.variables.cpuDifficulty = parseInt($('#cpu-difficulty').val()) || 20;
       
@@ -2065,6 +2369,104 @@ let main = {
         $('#status-display').html('DRAW BY AGREEMENT').removeClass().addClass('draw');
         $('#turn-display').html('Game Over - Draw');
         alert("Game ended in a draw by agreement!");
+      }
+    },
+
+    takeBackMove: function() {
+      // Only allow takeback in PvP mode and when it's the player's turn
+      if (main.variables.gameMode !== 'pvp') {
+        alert('Take back is only available in Player vs Player mode.');
+        return;
+      }
+      
+      // Need at least 2 moves (one full turn) to take back
+      if (main.variables.moveList.length < 1) {
+        alert('Not enough moves to take back.');
+        return;
+      }
+      
+      // Stop the clock while taking back
+      main.methods.stopClock();
+      
+      // Get the last move entry (which contains both white and black moves for a full turn)
+      const lastMoveEntry = main.variables.moveList[main.variables.moveList.length - 1];
+      
+      // Restore black's move if it exists
+      if (lastMoveEntry.blackMove) {
+        const blackMove = lastMoveEntry.blackMove;
+        const pieceName = blackMove.piece;
+        const fromPos = blackMove.from;
+        const toPos = blackMove.to;
+        const capturedPiece = blackMove.captured;
+        
+        // Move piece back
+        main.variables.pieces[pieceName].position = fromPos;
+        main.variables.pieces[pieceName].moved = false;
+        
+        // Restore captured piece if any
+        if (capturedPiece) {
+          main.variables.pieces[capturedPiece].captured = false;
+          main.variables.pieces[capturedPiece].position = toPos;
+        }
+      }
+      
+      // Restore white's move
+      if (lastMoveEntry.whiteMove) {
+        const whiteMove = lastMoveEntry.whiteMove;
+        const pieceName = whiteMove.piece;
+        const fromPos = whiteMove.from;
+        const toPos = whiteMove.to;
+        const capturedPiece = whiteMove.captured;
+        
+        // Move piece back
+        main.variables.pieces[pieceName].position = fromPos;
+        main.variables.pieces[pieceName].moved = false;
+        
+        // Restore captured piece if any
+        if (capturedPiece) {
+          main.variables.pieces[capturedPiece].captured = false;
+          main.variables.pieces[capturedPiece].position = toPos;
+        }
+      }
+      
+      // Remove the last move entry
+      main.variables.moveList.pop();
+      
+      // Restore turn to white (since we're taking back a full turn)
+      main.variables.turn = 'w';
+      
+      // Restore en passant target (clear for simplicity)
+      main.variables.enPassantTarget = null;
+      
+      // Restore half move clock (approximate - subtract 2)
+      main.variables.halfMoveClock = Math.max(0, main.variables.halfMoveClock - 2);
+      
+      // Remove last two entries from position history
+      main.variables.positionHistory = main.variables.positionHistory.slice(0, -2);
+      
+      // Re-render the board
+      main.methods.renderBoard();
+      
+      // Update turn display
+      $('#turn-display').html("It's White's Turn");
+      $('#resign-btn').html('Resign (White)');
+      
+      // Update game state
+      main.variables.gameState = 'normal';
+      $('#status-display').html('').removeClass();
+      
+      // Update clock display
+      main.methods.updateClockDisplay();
+      
+      // Update active clock
+      main.methods.updateClockActive();
+      
+      // Enable takeback button if there are still moves to undo
+      $('#takeback-btn').prop('disabled', main.variables.moveList.length < 1);
+      
+      // Restart clock for white's turn
+      if (main.variables.gameMode === 'pvp') {
+        main.methods.startClock();
       }
     },
 
