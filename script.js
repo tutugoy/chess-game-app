@@ -20,6 +20,9 @@ let main = {
     isCpuThinking: false,
     cpuColor: null,
     
+    // Board flip state
+    boardFlipped: false,
+    
     pieces: {
       w_king: {
         position: '5_1',
@@ -273,12 +276,97 @@ let main = {
       
       $('.gamecell').attr('chess', 'null');
       for (let gamepiece in main.variables.pieces) {
-        $('#' + main.variables.pieces[gamepiece].position).html(main.variables.pieces[gamepiece].img);
-        $('#' + main.variables.pieces[gamepiece].position).attr('chess', gamepiece);
+        let displayPos = main.methods.getDisplayPosition(main.variables.pieces[gamepiece].position);
+        $('#' + displayPos).html(main.variables.pieces[gamepiece].img);
+        $('#' + displayPos).attr('chess', gamepiece);
       }
       
       if (main.variables.cpuColor === 'w') {
         setTimeout(() => main.methods.triggerCpuMove(), 500);
+      }
+      
+      main.methods.updateBoardLabels();
+    },
+
+    // Board flip methods
+    flipBoard: function() {
+      main.variables.boardFlipped = !main.variables.boardFlipped;
+      main.methods.renderBoard();
+      main.methods.updateBoardLabels();
+    },
+
+    renderBoard: function() {
+      // Clear all cells
+      $('.gamecell').html('').attr('chess', 'null');
+      
+      // Re-render all pieces at their display positions
+      for (let pieceName in main.variables.pieces) {
+        let piece = main.variables.pieces[pieceName];
+        if (!piece.captured) {
+          let displayPos = main.methods.getDisplayPosition(piece.position);
+          $('#' + displayPos).html(piece.img);
+          $('#' + displayPos).attr('chess', pieceName);
+        }
+      }
+      
+      // Re-apply highlights if any
+      if (main.variables.highlighted.length > 0) {
+        main.methods.togglehighlight(main.variables.highlighted);
+      }
+    },
+
+    getDisplayPosition: function(boardPos) {
+      if (!main.variables.boardFlipped) {
+        return boardPos;
+      }
+      let parts = boardPos.split('_');
+      let file = parseInt(parts[0]);
+      let rank = parseInt(parts[1]);
+      let newFile = 9 - file;
+      let newRank = 9 - rank;
+      return newFile + '_' + newRank;
+    },
+
+    getBoardPosition: function(displayPos) {
+      if (!main.variables.boardFlipped) {
+        return displayPos;
+      }
+      let parts = displayPos.split('_');
+      let file = parseInt(parts[0]);
+      let rank = parseInt(parts[1]);
+      let newFile = 9 - file;
+      let newRank = 9 - rank;
+      return newFile + '_' + newRank;
+    },
+
+    updateBoardLabels: function() {
+      if (main.variables.boardFlipped) {
+        // Flip rank labels (1-8 becomes 8-1)
+        for (let i = 1; i <= 8; i++) {
+          $('.rank-' + i).text(9 - i);
+        }
+        // Flip file labels (a-h becomes h-a)
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        for (let i = 0; i < 8; i++) {
+          $('.file-' + files[i]).text(files[7 - i]);
+        }
+      } else {
+        // Normal labels
+        for (let i = 1; i <= 8; i++) {
+          $('.rank-' + i).text(i);
+        }
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        for (let i = 0; i < 8; i++) {
+          $('.file-' + files[i]).text(files[i]);
+        }
+      }
+    },
+
+    setCpuDifficulty: function(value) {
+      main.variables.cpuDifficulty = parseInt(value);
+      $('#difficulty-label').text(value);
+      if (main.variables.stockfish) {
+        main.variables.stockfish.postMessage('setoption name Skill Level value ' + main.variables.cpuDifficulty);
       }
     },
 
@@ -608,21 +696,24 @@ let main = {
         case 'w_king':
 
           coordinates = coordinates.filter(val => {
-            return ($('#' + val).attr('chess') == 'null' || ($('#' + val).attr('chess')).slice(0,1) == 'b');
+            let displayVal = main.methods.getDisplayPosition(val);
+            return ($('#' + displayVal).attr('chess') == 'null' || ($('#' + displayVal).attr('chess')).slice(0,1) == 'b');
           });
 
           break;
         case 'b_king':
         
           coordinates = coordinates.filter(val => {
-            return ($('#' + val).attr('chess') == 'null' || ($('#' + val).attr('chess')).slice(0,1) == 'w');
+            let displayVal = main.methods.getDisplayPosition(val);
+            return ($('#' + displayVal).attr('chess') == 'null' || ($('#' + displayVal).attr('chess')).slice(0,1) == 'w');
           });
 
           break;
         case 'w_knight':
 
           coordinates = coordinates.filter(val => {
-            return ($('#' + val).attr('chess') == 'null' || ($('#' + val).attr('chess')).slice(0,1) == 'b');
+            let displayVal = main.methods.getDisplayPosition(val);
+            return ($('#' + displayVal).attr('chess') == 'null' || ($('#' + displayVal).attr('chess')).slice(0,1) == 'b');
           });
 
           break;
@@ -630,7 +721,8 @@ let main = {
         case 'b_knight':
 
           coordinates = coordinates.filter(val => {
-            return ($('#' + val).attr('chess') == 'null' || ($('#' + val).attr('chess')).slice(0,1) == 'w');
+            let displayVal = main.methods.getDisplayPosition(val);
+            return ($('#' + displayVal).attr('chess') == 'null' || ($('#' + displayVal).attr('chess')).slice(0,1) == 'w');
           });
 
           break;
@@ -653,13 +745,16 @@ let main = {
                 }
               }
               
+              let displayVal = main.methods.getDisplayPosition(val);
+              let displaySp = main.methods.getDisplayPosition(sp.x + '_' + (parseInt(sp.y) + 1));
+              
               if (coordinate[0] < sp.x || coordinate[0] > sp.x){ 
-                return (isEnPassant || ($('#' + val).attr('chess') != 'null' && ($('#' + val).attr('chess')).slice(0,1) == 'b')); 
+                return (isEnPassant || ($('#' + displayVal).attr('chess') != 'null' && ($('#' + displayVal).attr('chess')).slice(0,1) == 'b')); 
               } else { 
-                if (coordinate[1] == (parseInt(sp.y) + 2) && $('#' + sp.x + '_' + (parseInt(sp.y) + 1)).attr('chess') != 'null'){
+                if (coordinate[1] == (parseInt(sp.y) + 2) && $('#' + displaySp).attr('chess') != 'null'){
                   
                 } else {
-                  return ($('#' + val).attr('chess') == 'null'); 
+                  return ($('#' + displayVal).attr('chess') == 'null'); 
                 }
               }
                           
@@ -685,13 +780,16 @@ let main = {
               }
             }
             
+            let displayVal = main.methods.getDisplayPosition(val);
+            let displaySp = main.methods.getDisplayPosition(sp.x + '_' + (parseInt(sp.y) - 1));
+            
             if (coordinate[0] < sp.x || coordinate[0] > sp.x){ 
-              return (isEnPassant || ($('#' + val).attr('chess') != 'null' && ($('#' + val).attr('chess')).slice(0,1) == 'w')); 
+              return (isEnPassant || ($('#' + displayVal).attr('chess') != 'null' && ($('#' + displayVal).attr('chess')).slice(0,1) == 'w')); 
             } else { 
-              if (coordinate[1] == (parseInt(sp.y) - 2) && $('#' + sp.x + '_' + (parseInt(sp.y) - 1)).attr('chess') != 'null'){
+              if (coordinate[1] == (parseInt(sp.y) - 2) && $('#' + displaySp).attr('chess') != 'null'){
                 
               } else {
-                return ($('#' + val).attr('chess') == 'null'); 
+                return ($('#' + displayVal).attr('chess') == 'null'); 
               }
             }
           });
@@ -718,14 +816,15 @@ let main = {
           }
         }).filter(val => { 
           if (flag == false){
-            if ($('#' + val).attr('chess') == 'null'){
+            let displayVal = main.methods.getDisplayPosition(val);
+            if ($('#' + displayVal).attr('chess') == 'null'){
               console.log(val)
               return val;
-            } else if (($('#' + val).attr('chess')).slice(0,1) == 'b') {
+            } else if (($('#' + displayVal).attr('chess')).slice(0,1) == 'b') {
               flag = true;
               console.log(val)
               return val;
-            } else if (($('#' + val).attr('chess')).slice(0,1) == 'w') {
+            } else if (($('#' + displayVal).attr('chess')).slice(0,1) == 'w') {
               console.log(val+'-3')
               flag = true;
             }
@@ -746,18 +845,19 @@ let main = {
           let pos = { x: 0, y: 0 };
           pos.x = parseInt(val.split('_')[0]);
           pos.y = parseInt(val.split('_')[1]);
-  
+
           if (!(pos.x < 1) && !(pos.x > 8) && !(pos.y < 1) && !(pos.y > 8)) { 
             return val;
           }
         }).filter(val => { 
           if (flag == false){
-            if ($('#' + val).attr('chess') == 'null'){
+            let displayVal = main.methods.getDisplayPosition(val);
+            if ($('#' + displayVal).attr('chess') == 'null'){
               return val;
-            } else if (($('#' + val).attr('chess')).slice(0,1) == 'w') {
+            } else if (($('#' + displayVal).attr('chess')).slice(0,1) == 'w') {
               flag = true;
               return val;
-            } else if (($('#' + val).attr('chess')).slice(0,1) == 'b') {
+            } else if (($('#' + displayVal).attr('chess')).slice(0,1) == 'b') {
               flag = true;
             }
           }
@@ -767,17 +867,13 @@ let main = {
       
     },
 
-    capture: function (target) {
-      let selectedpiece = {
-        name: $('#' + main.variables.selectedpiece).attr('chess'),
-        id: main.variables.selectedpiece
-      };
-
-      let pieceType = main.variables.pieces[selectedpiece.name].type;
+    capture: function(target) {
+      let displaySelectedId = main.methods.getDisplayPosition(main.variables.selectedpiece);
+      let selectedpiece = $('#' + displaySelectedId).attr('chess');
+      let pieceType = main.variables.pieces[selectedpiece].type;
       let isPawn = pieceType.includes('pawn');
+      
       let isEnPassant = false;
-      
-      
       if (isPawn && main.variables.enPassantTarget) {
         let ep = main.variables.enPassantTarget;
         let targetFile = parseInt(target.id.split('_')[0]);
@@ -790,8 +886,9 @@ let main = {
           
           let capturedPawnRank = ep.color === 'w' ? ep.rank + 1 : ep.rank - 1;
           let capturedPawnPos = ep.file + '_' + capturedPawnRank;
-          $('#' + capturedPawnPos).html('');
-          $('#' + capturedPawnPos).attr('chess', 'null');
+          let displayCapturedPawnPos = main.methods.getDisplayPosition(capturedPawnPos);
+          $('#' + displayCapturedPawnPos).html('');
+          $('#' + displayCapturedPawnPos).attr('chess', 'null');
           
           
           for (let p in main.variables.pieces) {
@@ -803,15 +900,16 @@ let main = {
         }
       }
       
+      let displayTargetId = main.methods.getDisplayPosition(target.id);
       
-      $('#' + target.id).html(main.variables.pieces[selectedpiece.name].img);
-      $('#' + target.id).attr('chess',selectedpiece.name);
+      $('#' + displayTargetId).html(main.variables.pieces[selectedpiece].img);
+      $('#' + displayTargetId).attr('chess', selectedpiece);
       
-      $('#' + selectedpiece.id).html('');
-      $('#' + selectedpiece.id).attr('chess','null');
+      $('#' + displaySelectedId).html('');
+      $('#' + displaySelectedId).attr('chess', 'null');
       
-      main.variables.pieces[selectedpiece.name].position = target.id;
-      main.variables.pieces[selectedpiece.name].moved = true;
+      main.variables.pieces[selectedpiece].position = target.id;
+      main.variables.pieces[selectedpiece].moved = true;
       
       if (!isEnPassant) {
         main.variables.pieces[target.name].captured = true;
@@ -828,14 +926,14 @@ let main = {
       }
       
       
-      main.methods.addMoveToList(selectedpiece.name, selectedpiece.id, target.id, true, false);
+      main.methods.addMoveToList(selectedpiece, main.variables.selectedpiece, target.id, true, false);
       
       
       main.variables.enPassantTarget = null;
       
       
       if (isPawn) {
-        let fromRank = parseInt(selectedpiece.id.split('_')[1]);
+        let fromRank = parseInt(main.variables.selectedpiece.split('_')[1]);
         let toRank = parseInt(target.id.split('_')[1]);
         if (Math.abs(toRank - fromRank) === 2) {
           let file = parseInt(target.id.split('_')[0]);
@@ -851,18 +949,20 @@ let main = {
 
     move: function (target) {
 
-      let selectedpiece = $('#' + main.variables.selectedpiece).attr('chess');
+      let displaySelectedId = main.methods.getDisplayPosition(main.variables.selectedpiece);
+      let selectedpiece = $('#' + displaySelectedId).attr('chess');
       let pieceType = main.variables.pieces[selectedpiece].type;
       let isPawn = pieceType.includes('pawn');
       let fromRank = parseInt(main.variables.selectedpiece.split('_')[1]);
       let toRank = parseInt(target.id.split('_')[1]);
 
+      let displayTargetId = main.methods.getDisplayPosition(target.id);
       
-      $('#' + target.id).html(main.variables.pieces[selectedpiece].img);
-      $('#' + target.id).attr('chess',selectedpiece);
+      $('#' + displayTargetId).html(main.variables.pieces[selectedpiece].img);
+      $('#' + displayTargetId).attr('chess',selectedpiece);
       
-      $('#' + main.variables.selectedpiece).html('');
-      $('#' + main.variables.selectedpiece).attr('chess','null');
+      $('#' + displaySelectedId).html('');
+      $('#' + displaySelectedId).attr('chess','null');
       main.variables.pieces[selectedpiece].position = target.id;
       main.variables.pieces[selectedpiece].moved = true;
       
@@ -1184,7 +1284,8 @@ let main = {
     },
 
     isMoveValid: function(piece, targetPos) {
-      let targetCell = $('#' + targetPos).attr('chess');
+      let displayTargetPos = main.methods.getDisplayPosition(targetPos);
+      let targetCell = $('#' + displayTargetPos).attr('chess');
       if (targetCell === undefined) return false;
       if (targetCell !== 'null' && targetCell.slice(0,1) === piece.slice(0,1)) return false;
       
@@ -1215,17 +1316,18 @@ let main = {
       let originalPos = main.variables.pieces[piece].position;
       let capturedPieceName = null;
       let capturedPieceCaptured = false;
-      let targetPieceImg = $('#' + targetPos).html(); 
-      let targetPieceChess = $('#' + targetPos).attr('chess'); 
+      let displayOriginalPos = main.methods.getDisplayPosition(originalPos);
+      let pieceImg = $('#' + displayOriginalPos).html();
+      let targetPieceImg = $('#' + displayTargetPos).html(); 
+      let targetPieceChess = $('#' + displayTargetPos).attr('chess'); 
       
       
       main.variables.pieces[piece].position = targetPos;
       
-      let pieceImg = $('#' + originalPos).html();
-      $('#' + targetPos).html(pieceImg);
-      $('#' + targetPos).attr('chess', piece);
-      $('#' + originalPos).html('');
-      $('#' + originalPos).attr('chess', 'null');
+      $('#' + displayTargetPos).html(pieceImg);
+      $('#' + displayTargetPos).attr('chess', piece);
+      $('#' + displayOriginalPos).html('');
+      $('#' + displayOriginalPos).attr('chess', 'null');
       
       if (piece === kingName) {
         kingPos = targetPos;
@@ -1240,14 +1342,15 @@ let main = {
       
       
       if (isEnPassant && capturedPawnPos) {
+        let displayCapturedPawnPos = main.methods.getDisplayPosition(capturedPawnPos);
         for (let p in main.variables.pieces) {
           if (main.variables.pieces[p].position === capturedPawnPos && main.variables.pieces[p].type.includes('pawn')) {
             capturedPieceName = p;
             capturedPieceCaptured = main.variables.pieces[p].captured;
             main.variables.pieces[p].captured = true;
             
-            $('#' + capturedPawnPos).html('');
-            $('#' + capturedPawnPos).attr('chess', 'null');
+            $('#' + displayCapturedPawnPos).html('');
+            $('#' + displayCapturedPawnPos).attr('chess', 'null');
             break;
           }
         }
@@ -1258,10 +1361,10 @@ let main = {
       
       main.variables.pieces[piece].position = originalPos;
       
-      $('#' + originalPos).html(pieceImg);
-      $('#' + originalPos).attr('chess', piece);
-      $('#' + targetPos).html(targetPieceImg);
-      $('#' + targetPos).attr('chess', targetPieceChess);
+      $('#' + displayOriginalPos).html(pieceImg);
+      $('#' + displayOriginalPos).attr('chess', piece);
+      $('#' + displayTargetPos).html(targetPieceImg);
+      $('#' + displayTargetPos).attr('chess', targetPieceChess);
       
       
       if (capturedPieceName && !isEnPassant) {
@@ -1272,8 +1375,9 @@ let main = {
         main.variables.pieces[capturedPieceName].captured = capturedPieceCaptured;
         
         let capturedPawnImg = main.variables.pieces[capturedPieceName].img;
-        $('#' + capturedPawnPos).html(capturedPawnImg);
-        $('#' + capturedPawnPos).attr('chess', capturedPieceName);
+        let displayCapturedPawnPos = main.methods.getDisplayPosition(capturedPawnPos);
+        $('#' + displayCapturedPawnPos).html(capturedPawnImg);
+        $('#' + displayCapturedPawnPos).attr('chess', capturedPieceName);
       }
       
       return safe;
@@ -1346,7 +1450,8 @@ let main = {
 
     togglehighlight: function(options) {
       options.forEach(function(element, index, array) {
-        $('#' + element).toggleClass("green");
+        let displayPos = main.methods.getDisplayPosition(element);
+        $('#' + displayPos).toggleClass("green");
       });
     },
 
@@ -1886,13 +1991,14 @@ let main = {
       let fromPos = fromFile + '_' + fromRank;
       let toPos = toFile + '_' + toRank;
       
-      let pieceName = $('#' + fromPos).attr('chess');
+      let displayFromPos = main.methods.getDisplayPosition(fromPos);
+      let pieceName = $('#' + displayFromPos).attr('chess');
       if (!pieceName || pieceName === 'null') return;
       
-      // Set selectedpiece so move/capture functions work correctly
+      // Set selectedpiece as board position (not display position)
       main.variables.selectedpiece = fromPos;
       
-      let target = { name: $('#' + toPos).attr('chess'), id: toPos };
+      let target = { name: $('#' + main.methods.getDisplayPosition(toPos)).attr('chess'), id: toPos };
       
       if (pieceName === 'w_king' || pieceName === 'b_king') {
         if (Math.abs(fromFile - toFile) === 2) {
@@ -1928,7 +2034,7 @@ let main = {
         
         let fen = main.methods.getFenFromPosition();
         main.variables.stockfish.postMessage('position fen ' + fen);
-        let depth = parseInt($('#cpu-difficulty').val()) || 15;
+        let depth = main.variables.cpuDifficulty;
         main.variables.stockfish.postMessage('go depth ' + depth);
       }
     },
@@ -1951,13 +2057,6 @@ let main = {
       
       // Restart game with new mode
       main.methods.restart();
-    },
-
-    setCpuDifficulty: function(difficulty) {
-      main.variables.cpuDifficulty = difficulty || 20;
-      if (main.variables.stockfish) {
-        main.variables.stockfish.postMessage('setoption name Skill Level value ' + main.variables.cpuDifficulty);
-      }
     },
 
     offerDraw: function() {
@@ -1990,26 +2089,31 @@ $(document).ready(function() {
       return;
     }
 
+    // Convert display position to board position
+    let displayPos = e.target.id;
+    let boardPos = main.methods.getBoardPosition(displayPos);
+
     var selectedpiece = {
       name: '',
       id: main.variables.selectedpiece
     };
 
     if (main.variables.selectedpiece == ''){
-      selectedpiece.name = $('#' + e.target.id).attr('chess');
+      selectedpiece.name = $('#' + displayPos).attr('chess');
     } else {
-      selectedpiece.name = $('#' + main.variables.selectedpiece).attr('chess');
+      let displaySelectedPos = main.methods.getDisplayPosition(main.variables.selectedpiece);
+      selectedpiece.name = $('#' + displaySelectedPos).attr('chess');
     }
 
     var target = {
       name: $(this).attr('chess'),
-      id: e.target.id
+      id: boardPos
     };
 
     if (main.variables.selectedpiece == '' && target.name.slice(0,1) == main.variables.turn) { 
 
       
-      main.variables.selectedpiece = e.target.id;
+      main.variables.selectedpiece = boardPos;
       main.methods.moveoptions($(this).attr('chess'));
       
       let piece = $(this).attr('chess');
@@ -2059,17 +2163,22 @@ $(document).ready(function() {
 
           main.variables.pieces['w_king'].position = '7_1';
           main.variables.pieces['w_king'].moved = true;
-          $('#'+k_position).html('');
-          $('#'+k_position).attr('chess','null');
-          $('#'+k_target).html(main.variables.pieces['w_king'].img);
-          $('#'+k_target).attr('chess','w_king');
+          let displayKPos = main.methods.getDisplayPosition(k_position);
+          let displayKTarget = main.methods.getDisplayPosition(k_target);
+          let displayRPos = main.methods.getDisplayPosition(r_position);
+          let displayRTarget = main.methods.getDisplayPosition(r_target);
+          
+          $('#'+displayKPos).html('');
+          $('#'+displayKPos).attr('chess','null');
+          $('#'+displayKTarget).html(main.variables.pieces['w_king'].img);
+          $('#'+displayKTarget).attr('chess','w_king');
 
           main.variables.pieces['w_rook2'].position = '6_1';
           main.variables.pieces['w_rook2'].moved = true;
-          $('#'+r_position).html('');
-          $('#'+r_position).attr('chess','null');
-          $('#'+r_target).html(main.variables.pieces['w_rook2'].img);
-          $('#'+r_target).attr('chess','w_rook2');
+          $('#'+displayRPos).html('');
+          $('#'+displayRPos).attr('chess','null');
+          $('#'+displayRTarget).html(main.variables.pieces['w_rook2'].img);
+          $('#'+displayRTarget).attr('chess','w_rook2');
 
           
           let moveSound = document.getElementById('move-sound');
@@ -2093,17 +2202,22 @@ $(document).ready(function() {
           
           main.variables.pieces['b_king'].position = '7_8';
           main.variables.pieces['b_king'].moved = true;
-          $('#'+k_position).html('');
-          $('#'+k_position).attr('chess','null');
-          $('#'+k_target).html(main.variables.pieces['b_king'].img);
-          $('#'+k_target).attr('chess','b_king');
+          let displayKPos = main.methods.getDisplayPosition(k_position);
+          let displayKTarget = main.methods.getDisplayPosition(k_target);
+          let displayRPos = main.methods.getDisplayPosition(r_position);
+          let displayRTarget = main.methods.getDisplayPosition(r_target);
+          
+          $('#'+displayKPos).html('');
+          $('#'+displayKPos).attr('chess','null');
+          $('#'+displayKTarget).html(main.variables.pieces['b_king'].img);
+          $('#'+displayKTarget).attr('chess','b_king');
 
           main.variables.pieces['b_rook2'].position = '6_8';
           main.variables.pieces['b_rook2'].moved = true;
-          $('#'+r_position).html('');
-          $('#'+r_position).attr('chess','null');
-          $('#'+r_target).html(main.variables.pieces['b_rook2'].img);
-          $('#'+r_target).attr('chess','b_rook2');
+          $('#'+displayRPos).html('');
+          $('#'+displayRPos).attr('chess','null');
+          $('#'+displayRTarget).html(main.variables.pieces['b_rook2'].img);
+          $('#'+displayRTarget).attr('chess','b_rook2');
 
           
           let moveSound = document.getElementById('move-sound');
@@ -2150,7 +2264,7 @@ $(document).ready(function() {
       main.methods.togglehighlight(main.variables.highlighted);
       main.variables.highlighted.length = 0;
 
-      main.variables.selectedpiece = target.id;
+      main.variables.selectedpiece = boardPos;
       main.methods.moveoptions(target.name);
 
     }
