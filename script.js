@@ -29,6 +29,26 @@ let main = {
     clockInterval: null,
     clockRunning: false,
     
+    // Castling rights
+    whiteKingMoved: false,
+    blackKingMoved: false,
+    whiteRookA_Moved: false,
+    whiteRookH_Moved: false,
+    blackRookA_Moved: false,
+    blackRookH_Moved: false,
+    
+    // Move tracking
+    fullMoveNumber: 1,
+    lastMove: null,
+    
+    // Promotion state
+    promotionPending: false,
+    promotionSquare: null,
+    promotionColor: null,
+    
+    // Captured pieces tracking
+    capturedPieces: { w: [], b: [] },
+    
     pieces: {
       w_king: {
         position: '5_1',
@@ -2477,6 +2497,149 @@ let main = {
         $('#turn-display').html('Game Over - ' + (main.variables.turn === 'w' ? 'Black' : 'White') + ' Wins');
         alert((main.variables.turn === 'w' ? 'White' : 'Black') + ' has resigned. ' + (main.variables.turn === 'w' ? 'Black' : 'White') + ' wins!');
       }
+    },
+
+    saveGame: function() {
+      const gameState = {
+        variables: {
+          pieces: main.variables.pieces,
+          turn: main.variables.turn,
+          moveList: main.variables.moveList,
+          capturedPieces: main.variables.capturedPieces,
+          gameMode: main.variables.gameMode,
+          difficulty: main.variables.difficulty,
+          gameState: main.variables.gameState,
+          whiteKingMoved: main.variables.whiteKingMoved,
+          blackKingMoved: main.variables.blackKingMoved,
+          whiteRookA_Moved: main.variables.whiteRookA_Moved,
+          whiteRookH_Moved: main.variables.whiteRookH_Moved,
+          blackRookA_Moved: main.variables.blackRookA_Moved,
+          blackRookH_Moved: main.variables.blackRookH_Moved,
+          enPassantTarget: main.variables.enPassantTarget,
+          halfMoveClock: main.variables.halfMoveClock,
+          fullMoveNumber: main.variables.fullMoveNumber,
+          whiteTime: main.variables.whiteTime,
+          blackTime: main.variables.blackTime,
+          clockRunning: main.variables.clockRunning,
+          boardFlipped: main.variables.boardFlipped,
+          lastMove: main.variables.lastMove,
+          promotionPending: main.variables.promotionPending,
+          promotionSquare: main.variables.promotionSquare,
+          promotionColor: main.variables.promotionColor
+        },
+        timestamp: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(gameState, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'chess-game-' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      alert('Game saved successfully!');
+    },
+
+    loadGame: function() {
+      document.getElementById('load-file-input').click();
+    },
+
+    handleLoadFile: function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const gameState = JSON.parse(e.target.result);
+          
+          // Restore all variables
+          main.variables.pieces = gameState.variables.pieces;
+          main.variables.turn = gameState.variables.turn;
+          main.variables.moveList = gameState.variables.moveList;
+          main.variables.capturedPieces = gameState.variables.capturedPieces;
+          main.variables.gameMode = gameState.variables.gameMode;
+          main.variables.difficulty = gameState.variables.difficulty;
+          main.variables.gameState = gameState.variables.gameState;
+          main.variables.whiteKingMoved = gameState.variables.whiteKingMoved;
+          main.variables.blackKingMoved = gameState.variables.blackKingMoved;
+          main.variables.whiteRookA_Moved = gameState.variables.whiteRookA_Moved;
+          main.variables.whiteRookH_Moved = gameState.variables.whiteRookH_Moved;
+          main.variables.blackRookA_Moved = gameState.variables.blackRookA_Moved;
+          main.variables.blackRookH_Moved = gameState.variables.blackRookH_Moved;
+          main.variables.enPassantTarget = gameState.variables.enPassantTarget;
+          main.variables.halfMoveClock = gameState.variables.halfMoveClock;
+          main.variables.fullMoveNumber = gameState.variables.fullMoveNumber;
+          main.variables.whiteTime = gameState.variables.whiteTime;
+          main.variables.blackTime = gameState.variables.blackTime;
+          main.variables.clockRunning = gameState.variables.clockRunning;
+          main.variables.boardFlipped = gameState.variables.boardFlipped;
+          main.variables.lastMove = gameState.variables.lastMove;
+          main.variables.promotionPending = gameState.variables.promotionPending;
+          main.variables.promotionSquare = gameState.variables.promotionSquare;
+          main.variables.promotionColor = gameState.variables.promotionColor;
+          
+          // Update UI elements
+          $('#game-mode').val(main.variables.gameMode);
+          $('#cpu-difficulty').val(main.variables.difficulty);
+          $('#difficulty-label').text(main.variables.difficulty);
+          
+          // Update Stockfish difficulty
+          if (main.variables.stockfish) {
+            main.variables.stockfish.postMessage('setoption name Skill Level value ' + main.variables.difficulty);
+          }
+          
+          // Re-render the board
+          main.methods.renderBoard();
+          main.methods.updateBoardLabels();
+          main.methods.updateMoveListDisplay();
+          main.methods.updateCapturedPieces();
+          main.methods.updateClockDisplay();
+          main.methods.updateClockActive();
+          
+          // Update turn display
+          $('#turn-display').html("It's " + (main.variables.turn === 'w' ? "White's" : "Black's") + " Turn");
+          $('#resign-btn').html('Resign (' + (main.variables.turn === 'w' ? 'White' : 'Black') + ')');
+          
+          // Update game status
+          if (main.variables.gameState === 'check') {
+            $('#status-display').html((main.variables.turn === 'w' ? 'WHITE' : 'BLACK') + ' IS IN CHECK').removeClass().addClass('check');
+          } else if (main.variables.gameState === 'checkmate') {
+            $('#status-display').html((main.variables.turn === 'w' ? 'WHITE' : 'BLACK') + ' IS CHECKMATED - ' + (main.variables.turn === 'w' ? 'BLACK' : 'WHITE') + ' WINS').removeClass().addClass('checkmate');
+          } else if (main.variables.gameState === 'stalemate') {
+            $('#status-display').html('STALEMATE - DRAW').removeClass().addClass('stalemate');
+          } else if (main.variables.gameState === 'draw') {
+            $('#status-display').html('DRAW BY INSUFFICIENT MATERIAL').removeClass().addClass('stalemate');
+          } else {
+            $('#status-display').html('').removeClass();
+          }
+          
+          // Update takeback button
+          $('#takeback-btn').prop('disabled', main.variables.moveList.length < 1);
+          
+          // Restart clock if needed
+          if (main.variables.clockRunning && main.variables.gameMode === 'pvp') {
+            main.methods.startClock();
+          }
+          
+          // Trigger CPU move if it's CPU's turn
+          if ((main.variables.gameMode === 'pvc' && main.variables.turn === 'b') || 
+              (main.variables.gameMode === 'cvp' && main.variables.turn === 'w')) {
+            setTimeout(() => main.methods.triggerCpuMove(), 500);
+          }
+          
+          alert('Game loaded successfully!');
+        } catch (error) {
+          console.error('Error loading game:', error);
+          alert('Error loading game file: ' + error.message);
+        }
+      };
+      reader.readAsText(file);
+      
+      // Reset file input so same file can be loaded again
+      event.target.value = '';
     },
 
   }
