@@ -87,6 +87,48 @@ body::after {
   padding: 4px;
 }
 
+.captured-pieces {
+  display: flex;
+  justify-content: space-between;
+  margin: 15px 0;
+  padding: 10px;
+  background: #111;
+  border: 2px solid #333;
+  border-radius: 0;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.captured-label {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 8px;
+  color: #fff;
+  text-shadow: 0 0 5px #fff;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.captured-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  min-height: 24px;
+}
+
+.captured-piece {
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  color: #fff;
+  text-shadow: 0 0 3px #fff;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.captured-piece:hover {
+  opacity: 1;
+  text-shadow: 0 0 8px #fff, 0 0 15px #fff;
+}
+
 .cellprefix {
   display: flex;
   align-items: center;

@@ -13,6 +13,10 @@
       <div class="clock-label">Black</div>
       <div class="clock-time" id="clock-black">10:00</div>
     </div>
+    <div id="captured-black" class="captured-pieces">
+      <span class="captured-label">Captured:</span>
+      <span class="captured-list" id="captured-black-list"></span>
+    </div>
     <div id="game">
       <div id="board-wrapper">
         <!-- Rank 8 -->
@@ -114,10 +118,15 @@
         <div class="cellprefix file-g">g</div>
         <div class="cellprefix file-h">h</div>
       </div>
-      <div id="clock-bottom" class="chess-clock">
-        <div class="clock-label">White</div>
-        <div class="clock-time" id="clock-white">10:00</div>
-      </div>
+    </div>
+    <div id="captured-white" class="captured-pieces">
+      <span class="captured-label">Captured:</span>
+      <span class="captured-list" id="captured-white-list"></span>
+    </div>
+    <div id="clock-bottom" class="chess-clock">
+      <div class="clock-label">White</div>
+      <div class="clock-time" id="clock-white">10:00</div>
+    </div>
       <div id="game-controls">
         <button id='restart-btn' onclick="main.methods.restart()">Restart Game</button>
         <button id='draw-btn' onclick="main.methods.offerDraw()">Offer Draw</button>
