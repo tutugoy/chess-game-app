@@ -29,6 +29,26 @@ let main = {
     clockInterval: null,
     clockRunning: false,
     
+    // Castling rights
+    whiteKingMoved: false,
+    blackKingMoved: false,
+    whiteRookA_Moved: false,
+    whiteRookH_Moved: false,
+    blackRookA_Moved: false,
+    blackRookH_Moved: false,
+    
+    // Move tracking
+    fullMoveNumber: 1,
+    lastMove: null,
+    
+    // Promotion state
+    promotionPending: false,
+    promotionSquare: null,
+    promotionColor: null,
+    
+    // Captured pieces tracking
+    capturedPieces: { w: [], b: [] },
+    
     pieces: {
       w_king: {
         position: '5_1',
@@ -269,9 +289,6 @@ let main = {
       
       main.methods.initStockfish();
       
-      // Try to load saved game from localStorage
-      main.methods.loadFromLocalStorage();
-      
       main.variables.gameMode = $('#game-mode').val() || 'pvp';
       main.variables.cpuDifficulty = parseInt($('#cpu-difficulty').val()) || 20;
       
@@ -302,136 +319,35 @@ let main = {
       }
     },
 
-    // LocalStorage save/load methods
-    saveToLocalStorage: function() {
-      const gameState = {
-        variables: {
-          pieces: main.variables.pieces,
-          turn: main.variables.turn,
-          moveList: main.variables.moveList,
-          capturedPieces: main.variables.capturedPieces,
-          gameMode: main.variables.gameMode,
-          cpuDifficulty: main.variables.cpuDifficulty,
-          gameState: main.variables.gameState,
-          whiteKingMoved: main.variables.whiteKingMoved,
-          blackKingMoved: main.variables.blackKingMoved,
-          whiteRookA_Moved: main.variables.whiteRookA_Moved,
-          whiteRookH_Moved: main.variables.whiteRookH_Moved,
-          blackRookA_Moved: main.variables.blackRookA_Moved,
-          blackRookH_Moved: main.variables.blackRookH_Moved,
-          enPassantTarget: main.variables.enPassantTarget,
-          halfMoveClock: main.variables.halfMoveClock,
-          fullMoveNumber: main.variables.fullMoveNumber,
-          whiteTime: main.variables.whiteTime,
-          blackTime: main.variables.blackTime,
-          clockRunning: main.variables.clockRunning,
-          boardFlipped: main.variables.boardFlipped,
-          lastMove: main.variables.lastMove,
-          promotionPending: main.variables.promotionPending,
-          promotionSquare: main.variables.promotionSquare,
-          promotionColor: main.variables.promotionColor
-        },
-        timestamp: new Date().toISOString()
-      };
-      
-      try {
-        localStorage.setItem('chessGameSave', JSON.stringify(gameState));
-      } catch (e) {
-        console.warn('Failed to save game to localStorage:', e);
-      }
-    },
-
-    loadFromLocalStorage: function() {
-      try {
-        const saved = localStorage.getItem('chessGameSave');
-        if (saved) {
-          const gameState = JSON.parse(saved);
-          
-          // Restore all variables
-          main.variables.pieces = gameState.variables.pieces;
-          main.variables.turn = gameState.variables.turn;
-          main.variables.moveList = gameState.variables.moveList;
-          main.variables.capturedPieces = gameState.variables.capturedPieces;
-          main.variables.gameMode = gameState.variables.gameMode;
-          main.variables.cpuDifficulty = gameState.variables.cpuDifficulty;
-          main.variables.gameState = gameState.variables.gameState;
-          main.variables.whiteKingMoved = gameState.variables.whiteKingMoved;
-          main.variables.blackKingMoved = gameState.variables.blackKingMoved;
-          main.variables.whiteRookA_Moved = gameState.variables.whiteRookA_Moved;
-          main.variables.whiteRookH_Moved = gameState.variables.whiteRookH_Moved;
-          main.variables.blackRookA_Moved = gameState.variables.blackRookA_Moved;
-          main.variables.blackRookH_Moved = gameState.variables.blackRookH_Moved;
-          main.variables.enPassantTarget = gameState.variables.enPassantTarget;
-          main.variables.halfMoveClock = gameState.variables.halfMoveClock;
-          main.variables.fullMoveNumber = gameState.variables.fullMoveNumber;
-          main.variables.whiteTime = gameState.variables.whiteTime;
-          main.variables.blackTime = gameState.variables.blackTime;
-          main.variables.clockRunning = gameState.variables.clockRunning;
-          main.variables.boardFlipped = gameState.variables.boardFlipped;
-          main.variables.lastMove = gameState.variables.lastMove;
-          main.variables.promotionPending = gameState.variables.promotionPending;
-          main.variables.promotionSquare = gameState.variables.promotionSquare;
-          main.variables.promotionColor = gameState.variables.promotionColor;
-          
-          console.log('Game loaded from localStorage');
-          
-          // Re-render the board and update UI
-          main.methods.renderBoard();
-          main.methods.updateBoardLabels();
-          main.methods.updateMoveListDisplay();
-          main.methods.updateCapturedPieces();
-          main.methods.updateClockDisplay();
-          main.methods.updateClockActive();
-          
-          // Update turn display
-          $('#turn-display').html("It's " + (main.variables.turn === 'w' ? "White's" : "Black's") + " Turn");
-          $('#resign-btn').html('Resign (' + (main.variables.turn === 'w' ? 'White' : 'Black') + ')');
-          
-          // Update game status
-          if (main.variables.gameState === 'check') {
-            $('#status-display').html((main.variables.turn === 'w' ? 'WHITE' : 'BLACK') + ' IS IN CHECK').removeClass().addClass('check');
-          } else if (main.variables.gameState === 'checkmate') {
-            $('#status-display').html((main.variables.turn === 'w' ? 'WHITE' : 'BLACK') + ' IS CHECKMATED - ' + (main.variables.turn === 'w' ? 'BLACK' : 'WHITE') + ' WINS').removeClass().addClass('checkmate');
-          } else if (main.variables.gameState === 'stalemate') {
-            $('#status-display').html('STALEMATE - DRAW').removeClass().addClass('stalemate');
-          } else if (main.variables.gameState === 'draw') {
-            $('#status-display').html('DRAW BY INSUFFICIENT MATERIAL').removeClass().addClass('stalemate');
-          } else {
-            $('#status-display').html('').removeClass();
-          }
-          
-          // Update takeback button
-          $('#takeback-btn').prop('disabled', main.variables.moveList.length < 1);
-          
-          // Restart clock if needed
-          if (main.variables.clockRunning && main.variables.gameMode === 'pvp') {
-            main.methods.startClock();
-          }
-          
-          // Trigger CPU move if it's CPU's turn
-          if ((main.variables.gameMode === 'pvc' && main.variables.turn === 'b') || 
-              (main.variables.gameMode === 'cvp' && main.variables.turn === 'w')) {
-            setTimeout(() => main.methods.triggerCpuMove(), 500);
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to load game from localStorage:', e);
-      }
-    },
-
-    clearLocalStorage: function() {
-      try {
-        localStorage.removeItem('chessGameSave');
-      } catch (e) {
-        console.warn('Failed to clear localStorage:', e);
-      }
-    },
-
     // Board flip methods
     flipBoard: function() {
       main.variables.boardFlipped = !main.variables.boardFlipped;
       main.methods.renderBoard();
       main.methods.updateBoardLabels();
+      main.methods.flipClocks();
+    },
+
+    flipClocks: function() {
+      // Swap the clock labels and times when board is flipped
+      const $clockTop = $('#clock-top');
+      const $clockBottom = $('#clock-bottom');
+      
+      if (main.variables.boardFlipped) {
+        // Board is flipped - White is at top, Black at bottom
+        $clockTop.find('.clock-label').text('White');
+        $clockTop.find('.clock-time').attr('id', 'clock-white');
+        $clockBottom.find('.clock-label').text('Black');
+        $clockBottom.find('.clock-time').attr('id', 'clock-black');
+      } else {
+        // Normal orientation - Black at top, White at bottom
+        $clockTop.find('.clock-label').text('Black');
+        $clockTop.find('.clock-time').attr('id', 'clock-black');
+        $clockBottom.find('.clock-label').text('White');
+        $clockBottom.find('.clock-time').attr('id', 'clock-white');
+      }
+      
+      // Update the display with current times
+      main.methods.updateClockDisplay();
     },
 
     renderBoard: function() {
@@ -452,9 +368,6 @@ let main = {
       if (main.variables.highlighted.length > 0) {
         main.methods.togglehighlight(main.variables.highlighted);
       }
-      
-      // Update captured pieces display
-      main.methods.updateCapturedPieces();
     },
 
     getDisplayPosition: function(boardPos) {
@@ -1127,8 +1040,6 @@ let main = {
       let selectedpiece = $('#' + displaySelectedId).attr('chess');
       let pieceType = main.variables.pieces[selectedpiece].type;
       let isPawn = pieceType.includes('pawn');
-      let attackerColor = pieceType.slice(0, 1); // 'w' or 'b'
-      let defenderColor = attackerColor === 'w' ? 'b' : 'w';
       
       let isEnPassant = false;
       if (isPawn && main.variables.enPassantTarget) {
@@ -1151,10 +1062,6 @@ let main = {
           for (let p in main.variables.pieces) {
             if (main.variables.pieces[p].position === capturedPawnPos && main.variables.pieces[p].type.includes('pawn')) {
               main.variables.pieces[p].captured = true;
-              // Track captured piece
-              let capturedPieceType = main.variables.pieces[p].type;
-              let capturedPieceImg = main.variables.pieces[p].img;
-              main.variables.capturedPieces[defenderColor].push({ type: capturedPieceType, img: capturedPieceImg });
               break;
             }
           }
@@ -1174,10 +1081,6 @@ let main = {
       
       if (!isEnPassant) {
         main.variables.pieces[target.name].captured = true;
-        // Track captured piece
-        let capturedPieceType = main.variables.pieces[target.name].type;
-        let capturedPieceImg = main.variables.pieces[target.name].img;
-        main.variables.capturedPieces[defenderColor].push({ type: capturedPieceType, img: capturedPieceImg });
       }
       
       
@@ -1210,9 +1113,6 @@ let main = {
           };
         }
       }
-      
-      // Update captured pieces display
-      main.methods.updateCapturedPieces();
     },
 
     move: function (target) {
@@ -1263,6 +1163,9 @@ let main = {
     },
 
     endturn: function(){
+      
+      // Switch chess clocks - stop current player's clock, start opponent's clock
+      main.methods.switchClock();
 
       if (main.variables.turn == 'w') {
         main.variables.turn = 'b';
@@ -1283,9 +1186,6 @@ let main = {
 
         
         main.methods.updatePositionHistory();
-        
-        // Auto-save to localStorage after each turn
-        main.methods.saveToLocalStorage();
         
         
         if (main.methods.checkThreefoldRepetition()) {
@@ -1341,9 +1241,6 @@ let main = {
         
         main.methods.updatePositionHistory();
         
-        // Auto-save to localStorage after each turn
-        main.methods.saveToLocalStorage();
-        
         
         if (main.methods.checkThreefoldRepetition()) {
           main.variables.gameState = 'draw';
@@ -1380,6 +1277,129 @@ let main = {
 
       }
 
+    },
+
+    // Chess Clock Methods
+    startClock: function() {
+      if (main.variables.clockRunning) return;
+      
+      main.variables.clockRunning = true;
+      main.variables.clockInterval = setInterval(function() {
+        if (main.variables.turn === 'w') {
+          main.variables.whiteTime -= 1000;
+          if (main.variables.whiteTime <= 0) {
+            main.variables.whiteTime = 0;
+            main.methods.clockTimeout('w');
+            return;
+          }
+        } else {
+          main.variables.blackTime -= 1000;
+          if (main.variables.blackTime <= 0) {
+            main.variables.blackTime = 0;
+            main.methods.clockTimeout('b');
+            return;
+          }
+        }
+        main.methods.updateClockDisplay();
+      }, 1000);
+      
+      // Update active clock visual
+      main.methods.updateClockActive();
+    },
+
+    stopClock: function() {
+      if (main.variables.clockInterval) {
+        clearInterval(main.variables.clockInterval);
+        main.variables.clockInterval = null;
+      }
+      main.variables.clockRunning = false;
+      $('#clock-top').removeClass('active');
+      $('#clock-bottom').removeClass('active');
+    },
+
+    switchClock: function() {
+      // Stop current clock, start opponent's clock
+      main.methods.stopClock();
+      
+      // Only start clock for player vs player games
+      if (main.variables.gameMode === 'pvp' && main.variables.gameState === 'normal') {
+        main.methods.startClock();
+      }
+    },
+
+    updateClockDisplay: function() {
+      const whiteMinutes = Math.floor(main.variables.whiteTime / 60000);
+      const whiteSeconds = Math.floor((main.variables.whiteTime % 60000) / 1000);
+      const blackMinutes = Math.floor(main.variables.blackTime / 60000);
+      const blackSeconds = Math.floor((main.variables.blackTime % 60000) / 1000);
+      
+      const whiteTimeStr = whiteMinutes.toString().padStart(2, '0') + ':' + whiteSeconds.toString().padStart(2, '0');
+      const blackTimeStr = blackMinutes.toString().padStart(2, '0') + ':' + blackSeconds.toString().padStart(2, '0');
+      
+      $('#clock-white').text(whiteTimeStr);
+      $('#clock-black').text(blackTimeStr);
+      
+      // Update warning classes
+      main.methods.updateClockWarnings();
+    },
+
+    updateClockWarnings: function() {
+      const $whiteClock = $('#clock-white').closest('.chess-clock');
+      const $blackClock = $('#clock-black').closest('.chess-clock');
+      
+      // Remove existing warning classes
+      $whiteClock.removeClass('time-warning time-critical');
+      $blackClock.removeClass('time-warning time-critical');
+      
+      // White clock warnings
+      if (main.variables.whiteTime <= 30000) { // 30 seconds
+        $whiteClock.addClass('time-critical');
+      } else if (main.variables.whiteTime <= 60000) { // 1 minute
+        $whiteClock.addClass('time-warning');
+      }
+      
+      // Black clock warnings
+      if (main.variables.blackTime <= 30000) { // 30 seconds
+        $blackClock.addClass('time-critical');
+      } else if (main.variables.blackTime <= 60000) { // 1 minute
+        $blackClock.addClass('time-warning');
+      }
+    },
+
+    updateClockActive: function() {
+      $('#clock-top').removeClass('active');
+      $('#clock-bottom').removeClass('active');
+      
+      if (main.variables.turn === 'w') {
+        // White's turn - highlight white's clock
+        if (main.variables.boardFlipped) {
+          $('#clock-top').addClass('active');
+        } else {
+          $('#clock-bottom').addClass('active');
+        }
+      } else {
+        // Black's turn - highlight black's clock
+        if (main.variables.boardFlipped) {
+          $('#clock-bottom').addClass('active');
+        } else {
+          $('#clock-top').addClass('active');
+        }
+      }
+    },
+
+    clockTimeout: function(color) {
+      main.methods.stopClock();
+      main.variables.gameState = 'checkmate';
+      
+      if (color === 'w') {
+        $('#status-display').html('BLACK WINS - WHITE FLAGGED').removeClass().addClass('checkmate');
+        $('#turn-display').html('Game Over - Black Wins on Time');
+      } else {
+        $('#status-display').html('WHITE WINS - BLACK FLAGGED').removeClass().addClass('checkmate');
+        $('#turn-display').html('Game Over - White Wins on Time');
+      }
+      
+      alert(color === 'w' ? 'White ran out of time! Black wins!' : 'Black ran out of time! White wins!');
     },
 
     updateGameState: function(){
@@ -1482,28 +1502,46 @@ let main = {
         moveNumber = main.variables.moveList.length;
       }
       
+      // Store detailed move info for take back functionality
+      const moveInfo = {
+        piece: pieceName,
+        from: fromPos,
+        to: toPos,
+        captured: captured,
+        notation: moveNotation,
+        color: color
+      };
+      
       if (color === 'w') {
         
         main.variables.moveList.push({
           number: moveNumber,
           white: moveNotation,
-          black: ''
+          black: '',
+          whiteMove: moveInfo
         });
       } else {
         
         if (main.variables.moveList.length > 0 && main.variables.moveList[main.variables.moveList.length - 1].black === '') {
           main.variables.moveList[main.variables.moveList.length - 1].black = moveNotation;
+          main.variables.moveList[main.variables.moveList.length - 1].blackMove = moveInfo;
         } else {
           main.variables.moveList.push({
             number: moveNumber,
             white: '',
-            black: moveNotation
+            black: moveNotation,
+            blackMove: moveInfo
           });
         }
       }
       
       
       main.methods.updateMoveListDisplay();
+      
+      // Enable takeback button after a move is made (in PvP mode)
+      if (main.variables.gameMode === 'pvp') {
+        $('#takeback-btn').prop('disabled', false);
+      }
     },
 
     updateMoveListDisplay: function() {
@@ -1525,25 +1563,6 @@ let main = {
       
       
       $('#move-list-container').scrollTop($('#move-list-container')[0].scrollHeight);
-    },
-
-    updateCapturedPieces: function() {
-      let whiteCapturedHtml = '';
-      let blackCapturedHtml = '';
-      
-      for (let piece in main.variables.pieces) {
-        if (main.variables.pieces[piece].captured) {
-          let img = main.variables.pieces[piece].img;
-          if (piece.startsWith('w_')) {
-            whiteCapturedHtml += '<span class="captured-piece">' + img + '</span>';
-          } else if (piece.startsWith('b_')) {
-            blackCapturedHtml += '<span class="captured-piece">' + img + '</span>';
-          }
-        }
-      }
-      
-      $('#captured-white-list').html(whiteCapturedHtml);
-      $('#captured-black-list').html(blackCapturedHtml);
     },
 
     isKingInCheck: function(kingPos, kingColor) {
@@ -1687,14 +1706,10 @@ let main = {
         let dir = type.includes('w') ? 1 : -1;
         let pawnColor = type.includes('w') ? 'w' : 'b';
         if (y + dir >= 1 && y + dir <= 8) {
-          let forwardPos = x + '_' + (y + dir);
-          let displayForwardPos = main.methods.getDisplayPosition(forwardPos);
-          moves.push(forwardPos);
+          moves.push(x + '_' + (y + dir));
           if (!main.variables.pieces[piece].moved && y + 2 * dir >= 1 && y + 2 * dir <= 8) {
-            let doubleForwardPos = x + '_' + (y + 2 * dir);
-            let displayDoubleForwardPos = main.methods.getDisplayPosition(doubleForwardPos);
-            if ($('#' + displayForwardPos).attr('chess') === 'null' && $('#' + displayDoubleForwardPos).attr('chess') === 'null') {
-              moves.push(doubleForwardPos);
+            if ($('#' + x + '_' + (y + dir)).attr('chess') === 'null') {
+              moves.push(x + '_' + (y + 2 * dir));
             }
           }
         }
@@ -1726,10 +1741,8 @@ let main = {
           for (let i = 1; i < 8; i++) {
             let nx = x + dir[0] * i, ny = y + dir[1] * i;
             if (nx < 1 || nx > 8 || ny < 1 || ny > 8) break;
-            let pos = nx + '_' + ny;
-            let displayPos = main.methods.getDisplayPosition(pos);
-            moves.push(pos);
-            if ($('#' + displayPos).attr('chess') !== 'null') break;
+            moves.push(nx + '_' + ny);
+            if ($('#' + nx + '_' + ny).attr('chess') !== 'null') break;
           }
         });
       }
@@ -1738,10 +1751,8 @@ let main = {
           for (let i = 1; i < 8; i++) {
             let nx = x + dir[0] * i, ny = y + dir[1] * i;
             if (nx < 1 || nx > 8 || ny < 1 || ny > 8) break;
-            let pos = nx + '_' + ny;
-            let displayPos = main.methods.getDisplayPosition(pos);
-            moves.push(pos);
-            if ($('#' + displayPos).attr('chess') !== 'null') break;
+            moves.push(nx + '_' + ny);
+            if ($('#' + nx + '_' + ny).attr('chess') !== 'null') break;
           }
         });
       }
@@ -1996,9 +2007,20 @@ let main = {
       main.variables.enPassantTarget = null;
       main.variables.positionHistory = [];
       main.variables.halfMoveClock = 0;
-      main.variables.capturedPieces = { w: [], b: [] };
       
       main.variables.isCpuThinking = false;
+      
+      // Reset chess clocks
+      main.variables.whiteTime = 600000;
+      main.variables.blackTime = 600000;
+      main.variables.clockRunning = false;
+      if (main.variables.clockInterval) {
+        clearInterval(main.variables.clockInterval);
+        main.variables.clockInterval = null;
+      }
+      main.methods.updateClockDisplay();
+      $('#clock-top').removeClass('active time-warning time-critical');
+      $('#clock-bottom').removeClass('active time-warning time-critical');
       
       main.variables.gameMode = $('#game-mode').val() || 'pvp';
       main.variables.cpuDifficulty = parseInt($('#cpu-difficulty').val()) || 20;
@@ -2027,15 +2049,8 @@ let main = {
       $('#move-list').html('');
       $('#resign-btn').html('Resign (White)');
 
-      // Clear captured pieces display
-      $('#captured-white-list').html('');
-      $('#captured-black-list').html('');
       
-      // Update move list
-      main.methods.updateMoveListDisplay();
-      
-      // Update takeback button
-      $('#takeback-btn').prop('disabled', true);
+      main.methods.gamesetup();
     },
 
     
@@ -2377,6 +2392,104 @@ let main = {
       }
     },
 
+    takeBackMove: function() {
+      // Only allow takeback in PvP mode and when it's the player's turn
+      if (main.variables.gameMode !== 'pvp') {
+        alert('Take back is only available in Player vs Player mode.');
+        return;
+      }
+      
+      // Need at least 2 moves (one full turn) to take back
+      if (main.variables.moveList.length < 1) {
+        alert('Not enough moves to take back.');
+        return;
+      }
+      
+      // Stop the clock while taking back
+      main.methods.stopClock();
+      
+      // Get the last move entry (which contains both white and black moves for a full turn)
+      const lastMoveEntry = main.variables.moveList[main.variables.moveList.length - 1];
+      
+      // Restore black's move if it exists
+      if (lastMoveEntry.blackMove) {
+        const blackMove = lastMoveEntry.blackMove;
+        const pieceName = blackMove.piece;
+        const fromPos = blackMove.from;
+        const toPos = blackMove.to;
+        const capturedPiece = blackMove.captured;
+        
+        // Move piece back
+        main.variables.pieces[pieceName].position = fromPos;
+        main.variables.pieces[pieceName].moved = false;
+        
+        // Restore captured piece if any
+        if (capturedPiece) {
+          main.variables.pieces[capturedPiece].captured = false;
+          main.variables.pieces[capturedPiece].position = toPos;
+        }
+      }
+      
+      // Restore white's move
+      if (lastMoveEntry.whiteMove) {
+        const whiteMove = lastMoveEntry.whiteMove;
+        const pieceName = whiteMove.piece;
+        const fromPos = whiteMove.from;
+        const toPos = whiteMove.to;
+        const capturedPiece = whiteMove.captured;
+        
+        // Move piece back
+        main.variables.pieces[pieceName].position = fromPos;
+        main.variables.pieces[pieceName].moved = false;
+        
+        // Restore captured piece if any
+        if (capturedPiece) {
+          main.variables.pieces[capturedPiece].captured = false;
+          main.variables.pieces[capturedPiece].position = toPos;
+        }
+      }
+      
+      // Remove the last move entry
+      main.variables.moveList.pop();
+      
+      // Restore turn to white (since we're taking back a full turn)
+      main.variables.turn = 'w';
+      
+      // Restore en passant target (clear for simplicity)
+      main.variables.enPassantTarget = null;
+      
+      // Restore half move clock (approximate - subtract 2)
+      main.variables.halfMoveClock = Math.max(0, main.variables.halfMoveClock - 2);
+      
+      // Remove last two entries from position history
+      main.variables.positionHistory = main.variables.positionHistory.slice(0, -2);
+      
+      // Re-render the board
+      main.methods.renderBoard();
+      
+      // Update turn display
+      $('#turn-display').html("It's White's Turn");
+      $('#resign-btn').html('Resign (White)');
+      
+      // Update game state
+      main.variables.gameState = 'normal';
+      $('#status-display').html('').removeClass();
+      
+      // Update clock display
+      main.methods.updateClockDisplay();
+      
+      // Update active clock
+      main.methods.updateClockActive();
+      
+      // Enable takeback button if there are still moves to undo
+      $('#takeback-btn').prop('disabled', main.variables.moveList.length < 1);
+      
+      // Restart clock for white's turn
+      if (main.variables.gameMode === 'pvp') {
+        main.methods.startClock();
+      }
+    },
+
     resign: function() {
       if (confirm("Resign the game? " + (main.variables.turn === 'w' ? 'White' : 'Black') + " will lose and " + (main.variables.turn === 'w' ? 'Black' : 'White') + " wins.")) {
         main.variables.gameState = 'resigned';
@@ -2394,7 +2507,7 @@ let main = {
           moveList: main.variables.moveList,
           capturedPieces: main.variables.capturedPieces,
           gameMode: main.variables.gameMode,
-          cpuDifficulty: main.variables.cpuDifficulty,
+          difficulty: main.variables.difficulty,
           gameState: main.variables.gameState,
           whiteKingMoved: main.variables.whiteKingMoved,
           blackKingMoved: main.variables.blackKingMoved,
@@ -2448,7 +2561,7 @@ let main = {
           main.variables.moveList = gameState.variables.moveList;
           main.variables.capturedPieces = gameState.variables.capturedPieces;
           main.variables.gameMode = gameState.variables.gameMode;
-          main.variables.cpuDifficulty = gameState.variables.cpuDifficulty;
+          main.variables.difficulty = gameState.variables.difficulty;
           main.variables.gameState = gameState.variables.gameState;
           main.variables.whiteKingMoved = gameState.variables.whiteKingMoved;
           main.variables.blackKingMoved = gameState.variables.blackKingMoved;
@@ -2470,12 +2583,12 @@ let main = {
           
           // Update UI elements
           $('#game-mode').val(main.variables.gameMode);
-          $('#cpu-difficulty').val(main.variables.cpuDifficulty);
-          $('#difficulty-label').text(main.variables.cpuDifficulty);
+          $('#cpu-difficulty').val(main.variables.difficulty);
+          $('#difficulty-label').text(main.variables.difficulty);
           
           // Update Stockfish difficulty
           if (main.variables.stockfish) {
-            main.variables.stockfish.postMessage('setoption name Skill Level value ' + main.variables.cpuDifficulty);
+            main.variables.stockfish.postMessage('setoption name Skill Level value ' + main.variables.difficulty);
           }
           
           // Re-render the board
@@ -2565,15 +2678,10 @@ $(document).ready(function() {
     if (main.variables.selectedpiece == '' && target.name.slice(0,1) == main.variables.turn) { 
 
       
-      // Find the piece's actual board position (not the display square's board position)
-      let pieceBoardPos = null;
-      for (let [key, piece] of Object.entries(main.variables.pieces)) {
-        if (piece.name === target.name) {
-          pieceBoardPos = key;
-          break;
-        }
-      }
-      main.variables.selectedpiece = pieceBoardPos || boardPos;
+      main.variables.selectedpiece = boardPos;
+      main.methods.moveoptions($(this).attr('chess'));
+      
+      let piece = $(this).attr('chess');
       main.variables.highlighted = main.variables.highlighted.filter(opt => main.methods.isMoveValid(piece, opt));
       main.methods.togglehighlight(main.variables.highlighted);
       $('.' + 'green').removeClass('green');
