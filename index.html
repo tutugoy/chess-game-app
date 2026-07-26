@@ -13,10 +13,6 @@
       <div class="clock-label">Black</div>
       <div class="clock-time" id="clock-black">10:00</div>
     </div>
-    <div id="captured-black" class="captured-pieces">
-      <span class="captured-label">Captured:</span>
-      <span class="captured-list" id="captured-black-list"></span>
-    </div>
     <div id="game">
       <div id="board-wrapper">
         <!-- Rank 8 -->
@@ -118,24 +114,16 @@
         <div class="cellprefix file-g">g</div>
         <div class="cellprefix file-h">h</div>
       </div>
-    </div>
-    <div id="captured-white" class="captured-pieces">
-      <span class="captured-label">Captured:</span>
-      <span class="captured-list" id="captured-white-list"></span>
-    </div>
-    <div id="clock-bottom" class="chess-clock">
-      <div class="clock-label">White</div>
-      <div class="clock-time" id="clock-white">10:00</div>
-    </div>
+      <div id="clock-bottom" class="chess-clock">
+        <div class="clock-label">White</div>
+        <div class="clock-time" id="clock-white">10:00</div>
+      </div>
       <div id="game-controls">
         <button id='restart-btn' onclick="main.methods.restart()">Restart Game</button>
         <button id='draw-btn' onclick="main.methods.offerDraw()">Offer Draw</button>
         <button id='resign-btn' onclick="main.methods.resign()">Resign</button>
         <button id='flip-btn' onclick="main.methods.flipBoard()">Flip Board</button>
         <button id='takeback-btn' onclick="main.methods.takeBackMove()" disabled>Take Back</button>
-        <button id='save-btn' onclick="main.methods.saveGame()">Save Game</button>
-        <button id='load-btn' onclick="main.methods.loadGame()">Load Game</button>
-        <input type="file" id="load-file-input" accept=".json" style="display: none;" onchange="main.methods.handleLoadFile(event)">
       </div>
       <div id="game-mode-controls" style="margin-top: 15px; text-align: center;">
         <label style="font-family: 'Press Start 2P', cursive; font-size: 10px; color: #fff; text-shadow: 0 0 5px #fff; margin-right: 10px;">Mode:</label>
@@ -164,10 +152,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
-
