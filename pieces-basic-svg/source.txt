@@ -1,0 +1,51 @@
+CITATION INFORMATION FOR GREEN CHESS ASSETS
+
+---------------------------------------------------------------------------
+SOURCE DETAILS
+---------------------------------------------------------------------------
+Title:        Green Chess - Download Images
+Author:       Uray M. János
+Publisher:    Green Chess
+Copyright:    © 2009–2026 Uray M. János
+License:      Creative Commons Attribution-ShareAlike (CC BY-SA)
+URL:          https://greenchess.net/info.php?item=downloads
+Accessed:     July 27, 2026
+
+---------------------------------------------------------------------------
+CONTENT LICENSE & ATTRIBUTION
+---------------------------------------------------------------------------
+The assets (chess pieces, boards, and logos) found on this page are 
+licensed under Creative Commons Attribution-ShareAlike.
+
+You are free to:
+  • Copy and redistribute the material
+  • Modify the material (remix, transform, build upon)
+
+Under the following terms:
+  • Attribution: You must give appropriate credit, provide a link to 
+    the license, and indicate if changes were made. You may do so in 
+    any reasonable manner, but not in any way that suggests the 
+    licensor endorses you or your use.
+  • ShareAlike: If you remix, transform, or build upon the material, 
+    you must distribute your contributions under the same license as 
+    the original.
+
+---------------------------------------------------------------------------
+RECOMMENDED ATTRIBUTION TEXT
+---------------------------------------------------------------------------
+If you use these assets, please include the following credit line in 
+your project documentation or credits:
+
+  "Chess pieces and boards by Uray M. János, used under a Creative 
+  Commons Attribution-ShareAlike license. Source: Green Chess."
+
+For specific pieces derived from Wikipedia, the original source should 
+also be acknowledged:
+
+  "Standard chess pieces based on work from Wikipedia."
+
+---------------------------------------------------------------------------
+BIBLIOGRAPHIC CITATION (APA Style Example)
+---------------------------------------------------------------------------
+Uray, M. J. (2026). Download images [Webpage]. Green Chess. 
+Retrieved July 27, 2026, from https://greenchess.net/info.php?item=downloads

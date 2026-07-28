@@ -52,7 +52,7 @@ let main = {
     pieces: {
       w_king: {
         position: '5_1',
-        img: '&#9812;',
+        img: '<img src="pieces-basic-svg/king-w.svg" class="chess-piece" alt="White King">',
         captured: false,
         moved: false,
         type: 'w_king'
@@ -60,105 +60,105 @@ let main = {
       },
       w_queen: {
         position: '4_1',
-        img: '&#9813;',
+        img: '<img src="pieces-basic-svg/queen-w.svg" class="chess-piece" alt="White Queen">',
         captured: false,
         moved: false,
         type: 'w_queen'
       },
       w_bishop1: {
         position: '3_1',
-        img: '&#9815;',
+        img: '<img src="pieces-basic-svg/bishop-w.svg" class="chess-piece" alt="White Bishop">',
         captured: false,
         moved: false,
         type: 'w_bishop'
       },
       w_bishop2: {
         position: '6_1',
-        img: '&#9815;',
+        img: '<img src="pieces-basic-svg/bishop-w.svg" class="chess-piece" alt="White Bishop">',
         captured: false,
         moved: false,
         type: 'w_bishop'
       },
       w_knight1: {
         position: '2_1',
-        img: '&#9816;',
+        img: '<img src="pieces-basic-svg/knight-w.svg" class="chess-piece" alt="White Knight">',
         captured: false,
         moved: false,
         type: 'w_knight'
       },
       w_knight2: {
         position: '7_1',
-        img: '&#9816;',
+        img: '<img src="pieces-basic-svg/knight-w.svg" class="chess-piece" alt="White Knight">',
         captured: false,
         moved: false,
         type: 'w_knight'
       },
       w_rook1: {
         position: '1_1',
-        img: '&#9814;',
+        img: '<img src="pieces-basic-svg/rook-w.svg" class="chess-piece" alt="White Rook">',
         captured: false,
         moved: false,
         type: 'w_rook'
       },
       w_rook2: {
         position: '8_1',
-        img: '&#9814;',
+        img: '<img src="pieces-basic-svg/rook-w.svg" class="chess-piece" alt="White Rook">',
         captured: false,
         moved: false,
         type: 'w_rook'
       },
       w_pawn1: {
         position: '1_2',
-        img: '&#9817;',
+        img: '<img src="pieces-basic-svg/pawn-w.svg" class="chess-piece" alt="White Pawn">',
         captured: false,
         type: 'w_pawn',
         moved: false
       },
       w_pawn2: {
         position: '2_2',
-        img: '&#9817;',
+        img: '<img src="pieces-basic-svg/pawn-w.svg" class="chess-piece" alt="White Pawn">',
         captured: false,
         type: 'w_pawn',
         moved: false
       },
       w_pawn3: {
         position: '3_2',
-        img: '&#9817;',
+        img: '<img src="pieces-basic-svg/pawn-w.svg" class="chess-piece" alt="White Pawn">',
         captured: false,
         type: 'w_pawn',
         moved: false
       },
       w_pawn4: {
         position: '4_2',
-        img: '&#9817;',
+        img: '<img src="pieces-basic-svg/pawn-w.svg" class="chess-piece" alt="White Pawn">',
         captured: false,
         type: 'w_pawn',
         moved: false
       },
       w_pawn5: {
         position: '5_2',
-        img: '&#9817;',
+        img: '<img src="pieces-basic-svg/pawn-w.svg" class="chess-piece" alt="White Pawn">',
         captured: false,
         type: 'w_pawn',
         moved: false
       },
       w_pawn6: {
         position: '6_2',
-        img: '&#9817;',
+        img: '<img src="pieces-basic-svg/pawn-w.svg" class="chess-piece" alt="White Pawn">',
         captured: false,
         type: 'w_pawn',
         moved: false
       },
       w_pawn7: {
         position: '7_2',
-        img: '&#9817;',
+        img: '<img src="pieces-basic-svg/pawn-w.svg" class="chess-piece" alt="White Pawn">',
         captured: false,
         type: 'w_pawn',
         moved: false
       },
       w_pawn8: {
         position: '8_2',
-        img: '&#9817;',
+        img: '<img src="pieces-basic-svg/pawn-w.svg" class="chess-piece" alt="White Pawn">',
         captured: false,
         type: 'w_pawn',
         moved: false
@@ -166,112 +166,112 @@ let main = {
 
       b_king: {
         position: '5_8',
-        img: '&#9818;',
+        img: '<img src="pieces-basic-svg/king-b.svg" class="chess-piece" alt="Black King">',
         captured: false,
         moved: false,
         type: 'b_king'
       },
       b_queen: {
         position: '4_8',
-        img: '&#9819;',
+        img: '<img src="pieces-basic-svg/queen-b.svg" class="chess-piece" alt="Black Queen">',
         captured: false,
         moved: false,
         type: 'b_queen'
       },
       b_bishop1: {
         position: '3_8',
-        img: '&#9821;',
+        img: '<img src="pieces-basic-svg/bishop-b.svg" class="chess-piece" alt="Black Bishop">',
         captured: false,
         moved: false,
         type: 'b_bishop'
       },
       b_bishop2: {
         position: '6_8',
-        img: '&#9821;',
+        img: '<img src="pieces-basic-svg/bishop-b.svg" class="chess-piece" alt="Black Bishop">',
         captured: false,
         moved: false,
         type: 'b_bishop'
       },
       b_knight1: {
         position: '2_8',
-        img: '&#9822;',
+        img: '<img src="pieces-basic-svg/knight-b.svg" class="chess-piece" alt="Black Knight">',
         captured: false,
         moved: false,
         type: 'b_knight'
       },
       b_knight2: {
         position: '7_8',
-        img: '&#9822;',
+        img: '<img src="pieces-basic-svg/knight-b.svg" class="chess-piece" alt="Black Knight">',
         captured: false,
         moved: false,
         type: 'b_knight'
       },
       b_rook1: {
         position: '1_8',
-        img: '&#9820;',
+        img: '<img src="pieces-basic-svg/rook-b.svg" class="chess-piece" alt="Black Rook">',
         captured: false,
         moved: false,
         type: 'b_rook'
       },
       b_rook2: {
         position: '8_8',
-        img: '&#9820;',
+        img: '<img src="pieces-basic-svg/rook-b.svg" class="chess-piece" alt="Black Rook">',
         captured: false,
         moved: false,
         type: 'b_rook'
       },
       b_pawn1: {
         position: '1_7',
-        img: '&#9823;',
+        img: '<img src="pieces-basic-svg/pawn-b.svg" class="chess-piece" alt="Black Pawn">',
         captured: false,
         type: 'b_pawn',
         moved: false
       },
       b_pawn2: {
         position: '2_7',
-        img: '&#9823;',
+        img: '<img src="pieces-basic-svg/pawn-b.svg" class="chess-piece" alt="Black Pawn">',
         captured: false,
         type: 'b_pawn',
         moved: false
       },
       b_pawn3: {
         position: '3_7',
-        img: '&#9823;',
+        img: '<img src="pieces-basic-svg/pawn-b.svg" class="chess-piece" alt="Black Pawn">',
         captured: false,
         type: 'b_pawn',
         moved: false
       },
       b_pawn4: {
         position: '4_7',
-        img: '&#9823;',
+        img: '<img src="pieces-basic-svg/pawn-b.svg" class="chess-piece" alt="Black Pawn">',
         captured: false,
         type: 'b_pawn',
         moved: false
       },
       b_pawn5: {
         position: '5_7',
-        img: '&#9823;',
+        img: '<img src="pieces-basic-svg/pawn-b.svg" class="chess-piece" alt="Black Pawn">',
         captured: false,
         type: 'b_pawn',
         moved: false
       },
       b_pawn6: {
         position: '6_7',
-        img: '&#9823;',
+        img: '<img src="pieces-basic-svg/pawn-b.svg" class="chess-piece" alt="Black Pawn">',
         captured: false,
         type: 'b_pawn',
         moved: false
       },
       b_pawn7: {
         position: '7_7',
-        img: '&#9823;',
+        img: '<img src="pieces-basic-svg/pawn-b.svg" class="chess-piece" alt="Black Pawn">',
         captured: false,
         type: 'b_pawn',
         moved: false
       },
       b_pawn8: {
         position: '8_7',
-        img: '&#9823;',
+        img: '<img src="pieces-basic-svg/pawn-b.svg" class="chess-piece" alt="Black Pawn">',
         captured: false,
         type: 'b_pawn',
         moved: false
@@ -1772,112 +1772,112 @@ let main = {
       main.variables.pieces = {
         w_king: {
           position: '5_1',
-          img: '&#9812;',
+          img: '<img src="pieces-basic-svg/king-w.svg" alt="White King" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'w_king'
         },
         w_queen: {
           position: '4_1',
-          img: '&#9813;',
+          img: '<img src="pieces-basic-svg/queen-w.svg" alt="White Queen" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'w_queen'
         },
         w_bishop1: {
           position: '3_1',
-          img: '&#9815;',
+          img: '<img src="pieces-basic-svg/bishop-w.svg" alt="White Bishop" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'w_bishop'
         },
         w_bishop2: {
           position: '6_1',
-          img: '&#9815;',
+          img: '<img src="pieces-basic-svg/bishop-w.svg" alt="White Bishop" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'w_bishop'
         },
         w_knight1: {
           position: '2_1',
-          img: '&#9816;',
+          img: '<img src="pieces-basic-svg/knight-w.svg" alt="White Knight" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'w_knight'
         },
         w_knight2: {
           position: '7_1',
-          img: '&#9816;',
+          img: '<img src="pieces-basic-svg/knight-w.svg" alt="White Knight" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'w_knight'
         },
         w_rook1: {
           position: '1_1',
-          img: '&#9814;',
+          img: '<img src="pieces-basic-svg/rook-w.svg" alt="White Rook" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'w_rook'
         },
         w_rook2: {
           position: '8_1',
-          img: '&#9814;',
+          img: '<img src="pieces-basic-svg/rook-w.svg" alt="White Rook" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'w_rook'
         },
         w_pawn1: {
           position: '1_2',
-          img: '&#9817;',
+          img: '<img src="pieces-basic-svg/pawn-w.svg" alt="White Pawn" class="chess-piece">',
           captured: false,
           type: 'w_pawn',
           moved: false
         },
         w_pawn2: {
           position: '2_2',
-          img: '&#9817;',
+          img: '<img src="pieces-basic-svg/pawn-w.svg" alt="White Pawn" class="chess-piece">',
           captured: false,
           type: 'w_pawn',
           moved: false
         },
         w_pawn3: {
           position: '3_2',
-          img: '&#9817;',
+          img: '<img src="pieces-basic-svg/pawn-w.svg" alt="White Pawn" class="chess-piece">',
           captured: false,
           type: 'w_pawn',
           moved: false
         },
         w_pawn4: {
           position: '4_2',
-          img: '&#9817;',
+          img: '<img src="pieces-basic-svg/pawn-w.svg" alt="White Pawn" class="chess-piece">',
           captured: false,
           type: 'w_pawn',
           moved: false
         },
         w_pawn5: {
           position: '5_2',
-          img: '&#9817;',
+          img: '<img src="pieces-basic-svg/pawn-w.svg" alt="White Pawn" class="chess-piece">',
           captured: false,
           type: 'w_pawn',
           moved: false
         },
         w_pawn6: {
           position: '6_2',
-          img: '&#9817;',
+          img: '<img src="pieces-basic-svg/pawn-w.svg" alt="White Pawn" class="chess-piece">',
           captured: false,
           type: 'w_pawn',
           moved: false
         },
         w_pawn7: {
           position: '7_2',
-          img: '&#9817;',
+          img: '<img src="pieces-basic-svg/pawn-w.svg" alt="White Pawn" class="chess-piece">',
           captured: false,
           type: 'w_pawn',
           moved: false
         },
         w_pawn8: {
           position: '8_2',
-          img: '&#9817;',
+          img: '<img src="pieces-basic-svg/pawn-w.svg" alt="White Pawn" class="chess-piece">',
           captured: false,
           type: 'w_pawn',
           moved: false
@@ -1885,112 +1885,112 @@ let main = {
 
         b_king: {
           position: '5_8',
-          img: '&#9818;',
+          img: '<img src="pieces-basic-svg/king-b.svg" alt="Black King" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'b_king'
         },
         b_queen: {
           position: '4_8',
-          img: '&#9819;',
+          img: '<img src="pieces-basic-svg/queen-b.svg" alt="Black Queen" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'b_queen'
         },
         b_bishop1: {
           position: '3_8',
-          img: '&#9821;',
+          img: '<img src="pieces-basic-svg/bishop-b.svg" alt="Black Bishop" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'b_bishop'
         },
         b_bishop2: {
           position: '6_8',
-          img: '&#9821;',
+          img: '<img src="pieces-basic-svg/bishop-b.svg" alt="Black Bishop" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'b_bishop'
         },
         b_knight1: {
           position: '2_8',
-          img: '&#9822;',
+          img: '<img src="pieces-basic-svg/knight-b.svg" alt="Black Knight" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'b_knight'
         },
         b_knight2: {
           position: '7_8',
-          img: '&#9822;',
+          img: '<img src="pieces-basic-svg/knight-b.svg" alt="Black Knight" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'b_knight'
         },
         b_rook1: {
           position: '1_8',
-          img: '&#9820;',
+          img: '<img src="pieces-basic-svg/rook-b.svg" alt="Black Rook" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'b_rook'
         },
         b_rook2: {
           position: '8_8',
-          img: '&#9820;',
+          img: '<img src="pieces-basic-svg/rook-b.svg" alt="Black Rook" class="chess-piece">',
           captured: false,
           moved: false,
           type: 'b_rook'
         },
         b_pawn1: {
           position: '1_7',
-          img: '&#9823;',
+          img: '<img src="pieces-basic-svg/pawn-b.svg" alt="Black Pawn" class="chess-piece">',
           captured: false,
           type: 'b_pawn',
           moved: false
         },
         b_pawn2: {
           position: '2_7',
-          img: '&#9823;',
+          img: '<img src="pieces-basic-svg/pawn-b.svg" alt="Black Pawn" class="chess-piece">',
           captured: false,
           type: 'b_pawn',
           moved: false
         },
         b_pawn3: {
           position: '3_7',
-          img: '&#9823;',
+          img: '<img src="pieces-basic-svg/pawn-b.svg" alt="Black Pawn" class="chess-piece">',
           captured: false,
           type: 'b_pawn',
           moved: false
         },
         b_pawn4: {
           position: '4_7',
-          img: '&#9823;',
+          img: '<img src="pieces-basic-svg/pawn-b.svg" alt="Black Pawn" class="chess-piece">',
           captured: false,
           type: 'b_pawn',
           moved: false
         },
         b_pawn5: {
           position: '5_7',
-          img: '&#9823;',
+          img: '<img src="pieces-basic-svg/pawn-b.svg" alt="Black Pawn" class="chess-piece">',
           captured: false,
           type: 'b_pawn',
           moved: false
         },
         b_pawn6: {
           position: '6_7',
-          img: '&#9823;',
+          img: '<img src="pieces-basic-svg/pawn-b.svg" alt="Black Pawn" class="chess-piece">',
           captured: false,
           type: 'b_pawn',
           moved: false
         },
         b_pawn7: {
           position: '7_7',
-          img: '&#9823;',
+          img: '<img src="pieces-basic-svg/pawn-b.svg" alt="Black Pawn" class="chess-piece">',
           captured: false,
           type: 'b_pawn',
           moved: false
         },
         b_pawn8: {
           position: '8_7',
-          img: '&#9823;',
+          img: '<img src="pieces-basic-svg/pawn-b.svg" alt="Black Pawn" class="chess-piece">',
           captured: false,
           type: 'b_pawn',
           moved: false
