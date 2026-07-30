@@ -45,6 +45,7 @@ let main = {
     promotionPending: false,
     promotionSquare: null,
     promotionColor: null,
+    pendingPromotion: null,
     
     // Captured pieces tracking
     capturedPieces: { w: [], b: [] },
@@ -1068,6 +1069,34 @@ let main = {
         }
       }
       
+      // Check for pawn promotion
+      if (isPawn && main.methods.checkPromotion(selectedpiece, target.id)) {
+        // Check if CPU has a pending promotion
+        if (main.variables.pendingPromotion) {
+          // CPU move with promotion - perform it directly
+          main.variables.promotionDial.square = target.id;
+          main.variables.promotionDial.color = pieceType.charAt(0);
+          main.variables.promotionDial.pawnPiece = selectedpiece;
+          
+          // Perform promotion immediately for CPU
+          main.methods.performPromotion(main.variables.pendingPromotion);
+          main.variables.pendingPromotion = null;
+          
+          // End turn after CPU promotion
+          main.methods.endturn();
+          return;
+        } else {
+          // Human player - show promotion dial
+          main.variables.promotionPending = true;
+          main.variables.promotionSquare = target.id;
+          main.variables.promotionColor = pieceType.charAt(0);
+          
+          // Show promotion dial
+          main.methods.showPromotionDial(target.id, pieceType.charAt(0), selectedpiece);
+          return;
+        }
+      }
+      
       let displayTargetId = main.methods.getDisplayPosition(target.id);
       
       $('#' + displayTargetId).html(main.variables.pieces[selectedpiece].img);
@@ -1125,6 +1154,34 @@ let main = {
       let toRank = parseInt(target.id.split('_')[1]);
 
       let displayTargetId = main.methods.getDisplayPosition(target.id);
+      
+      // Check for pawn promotion
+      if (isPawn && main.methods.checkPromotion(selectedpiece, target.id)) {
+        // Check if CPU has a pending promotion
+        if (main.variables.pendingPromotion) {
+          // CPU move with promotion - perform it directly
+          main.variables.promotionDial.square = target.id;
+          main.variables.promotionDial.color = pieceType.charAt(0);
+          main.variables.promotionDial.pawnPiece = selectedpiece;
+          
+          // Perform promotion immediately for CPU
+          main.methods.performPromotion(main.variables.pendingPromotion);
+          main.variables.pendingPromotion = null;
+          
+          // End turn after CPU promotion
+          main.methods.endturn();
+          return;
+        } else {
+          // Human player - show promotion dial
+          main.variables.promotionPending = true;
+          main.variables.promotionSquare = target.id;
+          main.variables.promotionColor = pieceType.charAt(0);
+          
+          // Show promotion dial
+          main.methods.showPromotionDial(target.id, pieceType.charAt(0), selectedpiece);
+          return;
+        }
+      }
       
       $('#' + displayTargetId).html(main.variables.pieces[selectedpiece].img);
       $('#' + displayTargetId).attr('chess',selectedpiece);
@@ -2312,6 +2369,9 @@ let main = {
       let toFile = uciMove.charCodeAt(2) - 96;
       let toRank = parseInt(uciMove[3]);
       
+      // Check for promotion (5th character in UCI: q, r, b, n)
+      let promotionPiece = uciMove.length === 5 ? uciMove[4] : null;
+      
       let fromPos = fromFile + '_' + fromRank;
       let toPos = toFile + '_' + toRank;
       
@@ -2339,6 +2399,12 @@ let main = {
         main.methods.capture(target);
         main.methods.endturn();
         return;
+      }
+      
+      // Handle promotion for CPU moves
+      if (promotionPiece && pieceName.includes('pawn')) {
+        // Store the promotion piece for the move/capture to use
+        main.variables.pendingPromotion = promotionPiece;
       }
       
       if (target.name !== 'null') {
@@ -2853,5 +2919,338 @@ $(document).ready(function() {
   $('body').contextmenu(function(e) {
     e.preventDefault();
   });
+
+  // ==========================================================================
+  // PREMIUM PAWN PROMOTION RADIAL DIAL
+  // ==========================================================================
+
+  // Promotion dial state
+  main.variables.promotionDial = {
+    active: false,
+    square: null,
+    color: null,
+    pawnPiece: null,
+    selectedPiece: null,
+    animating: false,
+    dialElement: null,
+    ringElement: null,
+    quadrants: null
+  };
+
+  // Initialize promotion dial
+  main.methods.initPromotionDial = function() {
+    const dial = $('#promotion-dial');
+    if (dial.length === 0) return;
+    
+    main.variables.promotionDial.dialElement = dial[0];
+    main.variables.promotionDial.ringElement = dial.find('.promotion-dial__ring')[0];
+    main.variables.promotionDial.quadrants = dial.find('.promotion-dial__quadrant');
+    
+    // Set up quadrant click handlers
+    main.variables.promotionDial.quadrants.each(function() {
+      const $quad = $(this);
+      const pieceType = $quad.data('piece');
+      
+      // Click handler
+      $quad.on('click touchend', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!main.variables.promotionDial.animating && !main.variables.promotionDial.selectedPiece) {
+          main.methods.selectPromotionPiece(pieceType);
+        }
+      });
+      
+      // Hover/touch start
+      $quad.on('mouseenter touchstart', function(e) {
+        if (!main.variables.promotionDial.animating && !main.variables.promotionDial.selectedPiece) {
+          $quad.addClass('promotion-dial__quadrant--hover');
+        }
+      });
+      
+      // Hover end/touch end
+      $quad.on('mouseleave touchend touchcancel', function(e) {
+        $quad.removeClass('promotion-dial__quadrant--hover promotion-dial__quadrant--press');
+      });
+      
+      // Press state
+      $quad.on('mousedown touchstart', function(e) {
+        if (!main.variables.promotionDial.animating && !main.variables.promotionDial.selectedPiece) {
+          $quad.addClass('promotion-dial__quadrant--press');
+        }
+      });
+    });
+    
+    // Backdrop click to cancel
+    dial.find('.promotion-dial__backdrop').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!main.variables.promotionDial.animating) {
+        main.methods.cancelPromotion();
+      }
+    });
+    
+    // Set up piece icons
+    main.methods.updatePromotionIcons();
+  };
+
+  // Update promotion icons based on color
+  main.methods.updatePromotionIcons = function() {
+    const color = main.variables.promotionDial.color;
+    if (!color) return;
+    
+    main.variables.promotionDial.quadrants.each(function() {
+      const $quad = $(this);
+      const $icon = $quad.find('.promotion-dial__icon');
+      const pieceType = $quad.data('piece');
+      const typeName = color + '_' + pieceType;
+      
+      // Find the first piece of this type (e.g., w_rook1, w_rook2)
+      let piece = null;
+      for (const key in main.variables.pieces) {
+        if (main.variables.pieces[key].type === typeName) {
+          piece = main.variables.pieces[key];
+          break;
+        }
+      }
+      
+      if (piece && piece.img) {
+        // Extract the SVG path from the img tag
+        const imgMatch = piece.img.match(/src="([^"]+)"/);
+        if (imgMatch) {
+          $icon.attr('src', imgMatch[1]);
+        }
+      }
+    });
+  };
+
+  // Show promotion dial at pawn position
+  main.methods.showPromotionDial = function(square, color, pawnPiece) {
+    if (main.variables.promotionDial.active || main.variables.promotionDial.animating) return;
+    
+    const dial = $('#promotion-dial');
+    const ring = dial.find('.promotion-dial__ring');
+    
+    // Calculate position of the pawn on screen (viewport coordinates)
+    const displaySquare = main.methods.getDisplayPosition(square);
+    const $cell = $('#' + displaySquare);
+    const cellRect = $cell[0].getBoundingClientRect();
+    
+    // Position the ring at the pawn's center (viewport coordinates for fixed positioning)
+    const centerX = cellRect.left + cellRect.width / 2;
+    const centerY = cellRect.top + cellRect.height / 2;
+    
+    ring.css({
+      left: centerX + 'px',
+      top: centerY + 'px',
+      transform: 'translate(-50%, -50%) scale(0.7)'
+    });
+    
+    // Store state
+    main.variables.promotionDial.active = true;
+    main.variables.promotionDial.square = square;
+    main.variables.promotionDial.color = color;
+    main.variables.promotionDial.pawnPiece = pawnPiece;
+    main.variables.promotionDial.selectedPiece = null;
+    main.variables.promotionDial.animating = true;
+    
+    // Update icons for the correct color
+    main.methods.updatePromotionIcons();
+    
+    // Show dial
+    dial.addClass('active');
+    
+    // Reset animation state after open animation
+    setTimeout(() => {
+      main.variables.promotionDial.animating = false;
+    }, 400);
+  };
+
+  // Hide promotion dial
+  main.methods.hidePromotionDial = function() {
+    const dial = $('#promotion-dial');
+    const ring = dial.find('.promotion-dial__ring');
+    
+    ring.addClass('promotion-dial__ring--collapse');
+    dial.find('.promotion-dial__quadrant').addClass('promotion-dial__quadrant--collapse');
+    
+    setTimeout(() => {
+      dial.removeClass('active');
+      ring.removeClass('promotion-dial__ring--collapse');
+      dial.find('.promotion-dial__quadrant').removeClass('promotion-dial__quadrant--collapse promotion-dial__quadrant--hover promotion-dial__quadrant--press promotion-dial__quadrant--selected promotion-dial__quadrant--pop');
+      
+      main.variables.promotionDial.active = false;
+      main.variables.promotionDial.square = null;
+      main.variables.promotionDial.color = null;
+      main.variables.promotionDial.pawnPiece = null;
+      main.variables.promotionDial.selectedPiece = null;
+      main.variables.promotionDial.animating = false;
+    }, 350);
+  };
+
+  // Cancel promotion - hide dial and clear selection so user can pick a different piece
+  main.methods.cancelPromotion = function() {
+    main.methods.hidePromotionDial();
+    main.methods.togglehighlight(main.variables.highlighted);
+    main.variables.highlighted.length = 0;
+    main.variables.selectedpiece = '';
+  };
+
+  // Select promotion piece
+  main.methods.selectPromotionPiece = function(pieceType) {
+    const $dial = $('#promotion-dial');
+    const $selectedQuad = $dial.find('.promotion-dial__quadrant[data-piece="' + pieceType + '"]');
+    
+    main.variables.promotionDial.selectedPiece = pieceType;
+    main.variables.promotionDial.animating = true;
+    
+    // Mark selected quadrant
+    $selectedQuad.addClass('promotion-dial__quadrant--selected');
+    
+    // Pop animation for selected quadrant
+    $selectedQuad.addClass('promotion-dial__quadrant--pop');
+    
+    // Hold the pop pose
+    setTimeout(() => {
+      // Collapse all quadrants together
+      $dial.find('.promotion-dial__quadrant').addClass('promotion-dial__quadrant--collapse');
+      $dial.find('.promotion-dial__ring').addClass('promotion-dial__ring--collapse');
+      
+      // After collapse, perform the promotion
+      setTimeout(() => {
+        main.methods.performPromotion(pieceType);
+        
+        // Clean up
+        $dial.removeClass('active');
+        $dial.find('.promotion-dial__quadrant').removeClass('promotion-dial__quadrant--collapse promotion-dial__quadrant--hover promotion-dial__quadrant--press promotion-dial__quadrant--selected promotion-dial__quadrant--pop');
+        $dial.find('.promotion-dial__ring').removeClass('promotion-dial__ring--collapse');
+        
+        main.variables.promotionDial.active = false;
+        main.variables.promotionDial.square = null;
+        main.variables.promotionDial.color = null;
+        main.variables.promotionDial.pawnPiece = null;
+        main.variables.promotionDial.selectedPiece = null;
+        main.variables.promotionDial.animating = false;
+        
+        // End turn after promotion
+        main.methods.endturn();
+      }, 350);
+    }, 120);
+  };
+
+  // Perform the actual promotion
+  main.methods.performPromotion = function(pieceType) {
+    const square = main.variables.promotionDial.square;
+    const color = main.variables.promotionDial.color;
+    const pawnPiece = main.variables.promotionDial.pawnPiece;
+    
+    if (!square || !color || !pawnPiece) return;
+    
+    // Get the pawn's original position (before it was moved)
+    const pawnOriginalPos = main.variables.pieces[pawnPiece].position;
+    const displayOriginalPos = main.methods.getDisplayPosition(pawnOriginalPos);
+    
+    // Find available piece of that type
+    let newPieceName = null;
+    for (let p in main.variables.pieces) {
+      if (main.variables.pieces[p].type === color + '_' + pieceType && main.variables.pieces[p].captured) {
+        newPieceName = p;
+        break;
+      }
+    }
+    
+    // If no captured piece available, find the second piece of that type
+    if (!newPieceName) {
+      for (let p in main.variables.pieces) {
+        if (main.variables.pieces[p].type === color + '_' + pieceType && p !== (color + '_' + pieceType)) {
+          newPieceName = p;
+          break;
+        }
+      }
+    }
+    
+    // Fallback to first piece of that type
+    if (!newPieceName) {
+      for (let p in main.variables.pieces) {
+        if (main.variables.pieces[p].type === color + '_' + pieceType) {
+          newPieceName = p;
+          break;
+        }
+      }
+    }
+    
+    if (!newPieceName) return;
+    
+    const displaySquare = main.methods.getDisplayPosition(square);
+    
+    // Update the piece
+    main.variables.pieces[pawnPiece].captured = true;
+    main.variables.pieces[pawnPiece].position = 'captured';
+    
+    main.variables.pieces[newPieceName].position = square;
+    main.variables.pieces[newPieceName].captured = false;
+    main.variables.pieces[newPieceName].moved = true;
+    
+    // Clear the pawn's original square on the board
+    $('#' + displayOriginalPos).html('');
+    $('#' + displayOriginalPos).attr('chess', 'null');
+    
+    // Update board display at promotion square
+    $('#' + displaySquare).html(main.variables.pieces[newPieceName].img);
+    $('#' + displaySquare).attr('chess', newPieceName);
+    
+    // Add to move list with promotion notation
+    const fromPos = main.variables.selectedpiece;
+    main.methods.addMoveToList(newPieceName, fromPos, square, false, true);
+    
+    // Play promotion sound
+    main.methods.playPromotionSound();
+  };
+
+  // Play promotion sound
+  main.methods.playPromotionSound = function() {
+    if (!main.variables.audioContext) return;
+    
+    const ctx = main.variables.audioContext;
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc1.type = 'sine';
+    osc2.type = 'triangle';
+    osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+    osc2.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+    osc1.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.3); // C6
+    osc2.frequency.exponentialRampToValueAtTime(1318.5, ctx.currentTime + 0.3); // E6
+    
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+    
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc1.start();
+    osc2.start();
+    osc1.stop(ctx.currentTime + 0.4);
+    osc2.stop(ctx.currentTime + 0.4);
+  };
+
+  // Check for pawn promotion after move
+  main.methods.checkPromotion = function(pieceName, targetSquare) {
+    const piece = main.variables.pieces[pieceName];
+    if (!piece || !piece.type.includes('pawn')) return false;
+    
+    const color = piece.type.charAt(0);
+    const targetRank = parseInt(targetSquare.split('_')[1]);
+    
+    // White pawn reaches rank 8, Black pawn reaches rank 1
+    if ((color === 'w' && targetRank === 8) || (color === 'b' && targetRank === 1)) {
+      return true;
+    }
+    return false;
+  };
+
+  // Initialize promotion dial on document ready
+  main.methods.initPromotionDial();
 
 });
