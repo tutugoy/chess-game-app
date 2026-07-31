@@ -1,4 +1,4 @@
-let main = {
+﻿let main = {
 
   variables: {
     turn: 'w',
@@ -1069,6 +1069,12 @@ let main = {
         }
       }
       
+      // Mark captured piece as captured BEFORE checking for promotion
+      // (so it's properly tracked even if promotion happens)
+      if (!isEnPassant) {
+        main.variables.pieces[target.name].captured = true;
+      }
+      
       // Check for pawn promotion
       if (isPawn && main.methods.checkPromotion(selectedpiece, target.id)) {
         // Check if CPU has a pending promotion
@@ -1107,10 +1113,6 @@ let main = {
       
       main.variables.pieces[selectedpiece].position = target.id;
       main.variables.pieces[selectedpiece].moved = true;
-      
-      if (!isEnPassant) {
-        main.variables.pieces[target.name].captured = true;
-      }
       
       
       main.methods.playCaptureSound();
@@ -2774,7 +2776,10 @@ $(document).ready(function() {
       if (isEnPassantCapture) {
         
         main.methods.capture(target);
-        main.methods.endturn();
+        // Don't end turn if promotion is pending (will be handled after promotion selection)
+        if (!main.variables.promotionPending) {
+          main.methods.endturn();
+        }
       } else if (selectedpiece.name == 'w_king' || selectedpiece.name == 'b_king'){
         
         let t0 = (selectedpiece.name == 'w_king');
@@ -2864,13 +2869,19 @@ $(document).ready(function() {
           
         } else { 
           main.methods.move(target);
-          main.methods.endturn();
+          // Don't end turn if promotion is pending (will be handled after promotion selection)
+          if (!main.variables.promotionPending) {
+            main.methods.endturn();
+          }
         }
 
       } else { 
 
         main.methods.move(target);
-        main.methods.endturn();
+        // Don't end turn if promotion is pending (will be handled after promotion selection)
+        if (!main.variables.promotionPending) {
+          main.methods.endturn();
+        }
 
       }
         
@@ -2885,7 +2896,10 @@ $(document).ready(function() {
         
         
         main.methods.capture(target);
-        main.methods.endturn();
+        // Don't end turn if promotion is pending (will be handled after promotion selection)
+        if (!main.variables.promotionPending) {
+          main.methods.endturn();
+        }
         
       }
 
@@ -3093,6 +3107,11 @@ $(document).ready(function() {
     main.methods.togglehighlight(main.variables.highlighted);
     main.variables.highlighted.length = 0;
     main.variables.selectedpiece = '';
+    
+    // Reset promotion pending flag
+    main.variables.promotionPending = false;
+    main.variables.promotionSquare = null;
+    main.variables.promotionColor = null;
   };
 
   // Select promotion piece
@@ -3149,7 +3168,7 @@ $(document).ready(function() {
     const pawnOriginalPos = main.variables.pieces[pawnPiece].position;
     const displayOriginalPos = main.methods.getDisplayPosition(pawnOriginalPos);
     
-    // Find available piece of that type
+    // Find available piece of that type (must be captured/off-board)
     let newPieceName = null;
     for (let p in main.variables.pieces) {
       if (main.variables.pieces[p].type === color + '_' + pieceType && main.variables.pieces[p].captured) {
@@ -3158,27 +3177,35 @@ $(document).ready(function() {
       }
     }
     
-    // If no captured piece available, find the second piece of that type
+    // If no captured piece available, create a new promoted piece
     if (!newPieceName) {
-      for (let p in main.variables.pieces) {
-        if (main.variables.pieces[p].type === color + '_' + pieceType && p !== (color + '_' + pieceType)) {
-          newPieceName = p;
-          break;
-        }
+      // Generate a unique name for the promoted piece
+      let counter = 1;
+      let baseName = color + '_' + pieceType;
+      newPieceName = baseName + '_promoted_' + counter;
+      while (main.variables.pieces[newPieceName]) {
+        counter++;
+        newPieceName = baseName + '_promoted_' + counter;
       }
-    }
-    
-    // Fallback to first piece of that type
-    if (!newPieceName) {
+      
+      // Find the image for this piece type
+      let pieceImg = '';
       for (let p in main.variables.pieces) {
         if (main.variables.pieces[p].type === color + '_' + pieceType) {
-          newPieceName = p;
+          pieceImg = main.variables.pieces[p].img;
           break;
         }
       }
+      
+      // Create new promoted piece
+      main.variables.pieces[newPieceName] = {
+        position: square,
+        img: pieceImg,
+        captured: false,
+        moved: true,
+        type: color + '_' + pieceType
+      };
     }
-    
-    if (!newPieceName) return;
     
     const displaySquare = main.methods.getDisplayPosition(square);
     
@@ -3204,6 +3231,11 @@ $(document).ready(function() {
     
     // Play promotion sound
     main.methods.playPromotionSound();
+    
+    // Reset promotion pending flag
+    main.variables.promotionPending = false;
+    main.variables.promotionSquare = null;
+    main.variables.promotionColor = null;
   };
 
   // Play promotion sound
