@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Srimaan's Chess Game engine</title>
   <link rel="stylesheet" href="./style.css">
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 <div id="game-container">
@@ -150,14 +150,42 @@
         <div class="clock-time" id="clock-white">10:00</div>
       </div>
       <div id="game-controls">
-        <button id='restart-btn' onclick="main.methods.restart()">Restart Game</button>
-        <button id='draw-btn' onclick="main.methods.offerDraw()">Offer Draw</button>
-        <button id='resign-btn' onclick="main.methods.resign()">Resign</button>
-        <button id='flip-btn' onclick="main.methods.flipBoard()">Flip Board</button>
-        <button id='takeback-btn' onclick="main.methods.takeBackMove()" disabled>Take Back</button>
         <button id='save-btn' onclick="main.methods.saveGame()">Save Game</button>
         <button id='load-btn' onclick="main.methods.loadGame()">Load Game</button>
         <input type="file" id="load-file-input" accept=".json" style="display: none;" onchange="main.methods.handleLoadFile(event)">
+        <button id='controls-dial-btn' onclick="main.methods.showControlsDial(event.clientX, event.clientY)" style="font-family: 'Press Start 2P', cursive; padding: 12px 24px; font-size: 10px; font-weight: bold; border: 4px solid #fff; border-radius: 0; cursor: pointer; transition: all 0.1s ease; box-shadow: 4px 4px 0 #333, 8px 8px 0 rgba(51, 51, 51, 0.5); min-width: 160px; background: #000; color: #fff; text-shadow: 0 0 5px #fff, 0 0 10px #fff; position: relative; overflow: hidden;">Menu</button>
+      </div>
+
+      <!-- Game Controls Dial -->
+      <div id="controls-dial" class="controls-dial">
+        <div class="controls-dial__backdrop"></div>
+        <div class="controls-dial__ring">
+          <div class="controls-dial__center" id="controls-dial-center">
+            <svg class="controls-dial__center-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M236.3 107.1C247.9 96 265 92.9 279.7 99.2C294.4 105.5 304 120 304 136L304 272.3L476.3 107.2C487.9 96 505 92.9 519.7 99.2C534.4 105.5 544 120 544 136L544 504C544 520 534.4 534.5 519.7 540.8C505 547.1 487.9 544 476.3 532.9L304 367.7L304 504C304 520 294.4 534.5 279.7 540.8C265 547.1 247.9 544 236.3 532.9L44.3 348.9C36.5 341.3 32 330.9 32 320C32 309.1 36.5 298.7 44.3 291.1L236.3 107.1z"/></svg>
+          </div>
+          <div class="controls-dial__quadrants">
+            <div class="controls-dial__quadrant controls-dial__quadrant--top-left" data-action="restart">
+              <div class="controls-dial__quadrant-inner">
+                <span class="controls-dial__icon">↻</span>
+              </div>
+            </div>
+            <div class="controls-dial__quadrant controls-dial__quadrant--top-right" data-action="draw">
+              <div class="controls-dial__quadrant-inner">
+                <span class="controls-dial__icon">½</span>
+              </div>
+            </div>
+            <div class="controls-dial__quadrant controls-dial__quadrant--bottom-left" data-action="flip">
+              <div class="controls-dial__quadrant-inner">
+                <span class="controls-dial__icon">⇄</span>
+              </div>
+            </div>
+            <div class="controls-dial__quadrant controls-dial__quadrant--bottom-right" data-action="resign">
+              <div class="controls-dial__quadrant-inner">
+                <span class="controls-dial__icon">✕</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div id="game-mode-controls" style="margin-top: 15px; text-align: center;">
         <label style="font-family: 'Press Start 2P', cursive; font-size: 10px; color: #fff; text-shadow: 0 0 5px #fff; margin-right: 10px;">Mode:</label>

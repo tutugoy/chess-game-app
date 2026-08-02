@@ -2951,6 +2951,20 @@ $(document).ready(function() {
     quadrants: null
   };
 
+  // ==========================================================================
+  // GAME CONTROLS RADIAL DIAL
+  // ==========================================================================
+
+  // Controls dial state
+  main.variables.controlsDial = {
+    active: false,
+    animating: false,
+    dialElement: null,
+    ringElement: null,
+    quadrants: null,
+    centerElement: null
+  };
+
   // Initialize promotion dial
   main.methods.initPromotionDial = function() {
     const dial = $('#promotion-dial');
@@ -3282,7 +3296,142 @@ $(document).ready(function() {
     return false;
   };
 
+  // Initialize controls dial
+  main.methods.initControlsDial = function() {
+    const dial = $('#controls-dial');
+    if (dial.length === 0) return;
+    
+    main.variables.controlsDial.dialElement = dial[0];
+    main.variables.controlsDial.ringElement = dial.find('.controls-dial__ring')[0];
+    main.variables.controlsDial.quadrants = dial.find('.controls-dial__quadrant');
+    main.variables.controlsDial.centerElement = dial.find('.controls-dial__center')[0];
+    
+    // Set up quadrant click handlers
+    main.variables.controlsDial.quadrants.each(function() {
+      const $quad = $(this);
+      const action = $quad.data('action');
+      
+      // Click handler
+      $quad.on('click touchend', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!main.variables.controlsDial.animating) {
+          main.methods.handleControlsAction(action);
+        }
+      });
+      
+      // Hover/touch start
+      $quad.on('mouseenter touchstart', function(e) {
+        if (!main.variables.controlsDial.animating) {
+          $quad.addClass('controls-dial__quadrant--hover');
+        }
+      });
+      
+      // Hover end/touch end
+      $quad.on('mouseleave touchend touchcancel', function(e) {
+        $quad.removeClass('controls-dial__quadrant--hover controls-dial__quadrant--press');
+      });
+      
+      // Press state
+      $quad.on('mousedown touchstart', function(e) {
+        if (!main.variables.controlsDial.animating) {
+          $quad.addClass('controls-dial__quadrant--press');
+        }
+      });
+    });
+    
+    // Center button click to close
+    dial.find('.controls-dial__center').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!main.variables.controlsDial.animating) {
+        main.methods.hideControlsDial();
+      }
+    });
+    
+    // Backdrop click to close
+    dial.find('.controls-dial__backdrop').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!main.variables.controlsDial.animating) {
+        main.methods.hideControlsDial();
+      }
+    });
+  };
+
+  // Show controls dial at click position
+  main.methods.showControlsDial = function(clientX, clientY) {
+    if (main.variables.controlsDial.active || main.variables.controlsDial.animating) return;
+    
+    const dial = $('#controls-dial');
+    const ring = dial.find('.controls-dial__ring');
+    
+    // Position the ring at the click position (viewport coordinates for fixed positioning)
+    ring.css({
+      left: clientX + 'px',
+      top: clientY + 'px',
+      transform: 'translate(-50%, -50%) scale(0.7)'
+    });
+    
+    // Store state
+    main.variables.controlsDial.active = true;
+    main.variables.controlsDial.animating = true;
+    
+    // Show dial
+    dial.addClass('active');
+    
+    // Reset animation state after open animation
+    setTimeout(() => {
+      main.variables.controlsDial.animating = false;
+    }, 400);
+  };
+
+  // Hide controls dial
+  main.methods.hideControlsDial = function() {
+    const dial = $('#controls-dial');
+    const ring = dial.find('.controls-dial__ring');
+    
+    if (!main.variables.controlsDial.active) return;
+    
+    main.variables.controlsDial.animating = true;
+    
+    // Add collapse animation classes
+    ring.addClass('controls-dial__ring--collapse');
+    dial.find('.controls-dial__quadrant').addClass('controls-dial__quadrant--collapse');
+    
+    setTimeout(() => {
+      dial.removeClass('active');
+      ring.removeClass('controls-dial__ring--collapse');
+      dial.find('.controls-dial__quadrant').removeClass('controls-dial__quadrant--collapse controls-dial__quadrant--hover controls-dial__quadrant--press');
+      
+      main.variables.controlsDial.active = false;
+      main.variables.controlsDial.animating = false;
+    }, 350);
+  };
+
+  // Handle controls dial actions
+  main.methods.handleControlsAction = function(action) {
+    switch (action) {
+      case 'restart':
+        main.methods.restart();
+        break;
+      case 'draw':
+        main.methods.offerDraw();
+        break;
+      case 'flip':
+        main.methods.flipBoard();
+        break;
+      case 'resign':
+        main.methods.resign();
+        break;
+    }
+    
+    // Hide the dial after action
+    main.methods.hideControlsDial();
+  };
+
   // Initialize promotion dial on document ready
   main.methods.initPromotionDial();
+  main.methods.initControlsDial();
 
 });
