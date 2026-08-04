@@ -150,10 +150,10 @@
         <div class="clock-time" id="clock-white">10:00</div>
       </div>
       <div id="game-controls">
-        <button id='save-btn' onclick="main.methods.saveGame()">Save Game</button>
-        <button id='load-btn' onclick="main.methods.loadGame()">Load Game</button>
+        <button id='save-btn' class="gray" onclick="main.methods.saveGame()">Save Game</button>
+        <button id='load-btn' class="gray" onclick="main.methods.loadGame()">Load Game</button>
         <input type="file" id="load-file-input" accept=".json" style="display: none;" onchange="main.methods.handleLoadFile(event)">
-        <button id='controls-dial-btn' onclick="main.methods.showControlsDial(event.clientX, event.clientY)" style="font-family: 'Press Start 2P', cursive; padding: 12px 24px; font-size: 10px; font-weight: bold; border: 4px solid #fff; border-radius: 0; cursor: pointer; transition: all 0.1s ease; box-shadow: 4px 4px 0 #333, 8px 8px 0 rgba(51, 51, 51, 0.5); min-width: 160px; background: #000; color: #fff; text-shadow: 0 0 5px #fff, 0 0 10px #fff; position: relative; overflow: hidden;">Menu</button>
+        <button id='controls-dial-btn' class="blue" onclick="main.methods.showControlsDial(event.clientX, event.clientY)">Menu</button>
       </div>
 
       <!-- Game Controls Dial -->
@@ -203,6 +203,7 @@
   <div id="move-list-container">
     <div id="move-list-header">
       <h3>Move List</h3>
+      <button id="clear-moves" class="gray" onclick="main.methods.clearMoveList()">Clear</button>
     </div>
     <div id="turn-display">It's White's Turn!</div>
     <div id="status-display"></div>
