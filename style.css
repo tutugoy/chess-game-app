@@ -1418,6 +1418,139 @@ button:focus,
   }
 }
 
+/* ==========================================================================
+   DIFFICULTY SLIDER - MOOD STYLE
+   ========================================================================== */
+
+.difficulty-slider-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.range-style {
+  position: relative;
+  width: 100%;
+  padding: 20px 0;
+}
+
+.range-style input[type='range'] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  --fill-color: #4CAF50;
+  --fill-percent: 5%;
+}
+
+.range-style input[type='range']:focus {
+  outline: none;
+}
+
+/* Track: neumorphic groove with colored fill behind the thumb */
+.range-style input[type='range']::-webkit-slider-runnable-track {
+  height: 20px;
+  border-radius: 10px;
+  background: linear-gradient(
+    to right,
+    var(--fill-color) 0%,
+    var(--fill-color) var(--fill-percent),
+    #111 var(--fill-percent),
+    #111 100%
+  );
+  box-shadow: inset -2px -2px 8px #fff, inset 2px 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.range-style input[type='range']::-moz-range-track {
+  height: 20px;
+  border-radius: 10px;
+  background: linear-gradient(
+    to right,
+    var(--fill-color) 0%,
+    var(--fill-color) var(--fill-percent),
+    #111 var(--fill-percent),
+    #111 100%
+  );
+  box-shadow: inset -2px -2px 8px #fff, inset 2px 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Native thumb: kept for real drag/focus/keyboard behavior, but made invisible */
+.range-style input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 40px;
+  height: 40px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.range-style input[type='range']::-moz-range-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+/* Visible custom thumb: neumorphic circle + face, JS-positioned */
+.thumb-face {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-image: linear-gradient(-45deg, rgba(255, 255, 255, 0.8), transparent);
+  box-shadow: -1px -1px 2px #fff, 1px 1px 2px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  transform: translate(0, -50%);
+}
+
+.thumb-face svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#difficulty-face-circle {
+  transition: fill 0.08s ease;
+}
+
+#difficulty-mouth-path,
+#difficulty-brow-left,
+#difficulty-brow-right {
+  fill: none;
+  stroke: #222;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+#difficulty-eye-left,
+#difficulty-eye-right {
+  fill: #222;
+}
+
+.hint {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 14px;
+  width: 100%;
+  text-align: center;
+  color: #888;
+  font-size: 0.8rem;
+  font-family: 'VT323', monospace;
+}
+
 
 
 

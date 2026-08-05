@@ -534,9 +534,78 @@
     setCpuDifficulty: function(value) {
       main.variables.cpuDifficulty = parseInt(value);
       $('#difficulty-label').text(value);
+      // Update the slider value
+      const slider = document.getElementById('cpu-difficulty');
+      if (slider) {
+        slider.value = value;
+      }
       if (main.variables.stockfish) {
         main.variables.stockfish.postMessage('setoption name Skill Level value ' + main.variables.cpuDifficulty);
       }
+      // Update the mood slider face
+      main.methods.updateDifficultyFace(value);
+    },
+
+    updateDifficultyFace: function(value) {
+      const slider = document.getElementById('cpu-difficulty');
+      const thumb = document.getElementById('difficulty-thumb-face');
+      const mouth = document.getElementById('difficulty-mouth-path');
+      const browL = document.getElementById('difficulty-brow-left');
+      const browR = document.getElementById('difficulty-brow-right');
+      const circle = document.getElementById('difficulty-face-circle');
+      
+      if (!slider || !thumb || !mouth || !browL || !browR || !circle) return;
+      
+      const THUMB_SIZE = 40;
+      const GREEN = [76, 175, 80];
+      const YELLOW = [255, 193, 7];
+      const RED = [244, 67, 54];
+      
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+      
+      function lerpColor(c1, c2, t) {
+        return `rgb(${Math.round(lerp(c1[0], c2[0], t))}, ${Math.round(lerp(c1[1], c2[1], t))}, ${Math.round(lerp(c1[2], c2[2], t))})`;
+      }
+      
+      // t=0 -> green (easy), t=0.5 -> yellow (medium), t=1 -> red (hard)
+      function moodColor(t) {
+        return t <= 0.5
+          ? lerpColor(GREEN, YELLOW, t / 0.5)
+          : lerpColor(YELLOW, RED, (t - 0.5) / 0.5);
+      }
+      
+      function updateFace(t, color) {
+        // Mouth: same command structure, only control point's y moves
+        const bulge = 6 * (1 - 2 * t);
+        mouth.setAttribute('d', `M 12 25 Q 20 ${25 + bulge} 28 25`);
+        
+        // Eyebrows: flat at t=0, angling down toward nose as t -> 1 (furrowed/angry)
+        const innerY = lerp(9, 15, t);
+        const outerY = lerp(9, 6, t);
+        browL.setAttribute('d', `M 8 ${outerY} L 15 ${innerY}`);
+        browR.setAttribute('d', `M 32 ${outerY} L 25 ${innerY}`);
+        
+        circle.setAttribute('fill', color);
+      }
+      
+      const min = +slider.min, max = +slider.max, val = parseInt(value);
+      const t = (val - min) / (max - min);
+      const trackWidth = slider.offsetWidth;
+      const x = t * (trackWidth - THUMB_SIZE);
+      
+      thumb.style.transform = `translate(${x}px, -50%)`;
+      
+      const color = moodColor(t);
+      updateFace(t, color);
+      
+      // Fill the track behind the thumb with the exact same color as the face
+      const thumbCenterPx = x + THUMB_SIZE / 2;
+      const fillPercent = (thumbCenterPx / trackWidth) * 100;
+      
+      slider.style.setProperty('--fill-color', color);
+      slider.style.setProperty('--fill-percent', `${fillPercent}%`);
     },
 
     
@@ -3433,5 +3502,21 @@ $(document).ready(function() {
   // Initialize promotion dial on document ready
   main.methods.initPromotionDial();
   main.methods.initControlsDial();
+  
+  // Initialize difficulty slider
+  main.methods.initDifficultySlider = function() {
+    const slider = document.getElementById('cpu-difficulty');
+    if (slider) {
+      slider.addEventListener('input', function() {
+        main.methods.updateDifficultyFace(this.value);
+      });
+      window.addEventListener('resize', function() {
+        main.methods.updateDifficultyFace(slider.value);
+      });
+      // Initial update
+      main.methods.updateDifficultyFace(slider.value);
+    }
+  };
+  main.methods.initDifficultySlider();
 
 });

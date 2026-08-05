@@ -194,9 +194,24 @@
           <option value="pvc">Player vs CPU (White)</option>
           <option value="cvp">CPU vs Player (Black)</option>
         </select>
-        <label style="font-family: 'Press Start 2P', cursive; font-size: 10px; color: #fff; text-shadow: 0 0 5px #fff; margin-left: 15px; margin-right: 10px;">Difficulty:</label>
-        <input type="range" id="cpu-difficulty" min="1" max="20" value="20" style="width: 150px; cursor: pointer; vertical-align: middle;" oninput="main.methods.setCpuDifficulty(this.value)">
-        <span id="difficulty-label" style="font-family: 'Press Start 2P', cursive; font-size: 10px; color: #fff; text-shadow: 0 0 5px #fff; margin-left: 10px;">20</span>
+        <div class="difficulty-slider-container" style="margin-top: 15px;">
+          <label style="font-family: 'Press Start 2P', cursive; font-size: 10px; color: #fff; text-shadow: 0 0 5px #fff; display: block; margin-bottom: 10px;">Difficulty:</label>
+          <div class="range-style" id="difficulty-slider-wrap">
+            <input type="range" min="1" max="20" value="20" id="cpu-difficulty" aria-label="CPU Difficulty" oninput="main.methods.setCpuDifficulty(this.value)" />
+            <div class="thumb-face" id="difficulty-thumb-face">
+              <svg viewBox="0 0 40 40">
+                <circle id="difficulty-face-circle" cx="20" cy="20" r="18" fill="#4CAF50" />
+                <circle id="difficulty-eye-left" cx="14" cy="18" r="2" />
+                <circle id="difficulty-eye-right" cx="26" cy="18" r="2" />
+                <path id="difficulty-brow-left" d="M 8 9 L 15 9" />
+                <path id="difficulty-brow-right" d="M 32 9 L 25 9" />
+                <path id="difficulty-mouth-path" d="M 12 25 Q 20 31 28 25" />
+              </svg>
+            </div>
+            <div class="hint" id="difficulty-hint">drag to adjust</div>
+          </div>
+          <span id="difficulty-label" style="font-family: 'Press Start 2P', cursive; font-size: 10px; color: #fff; text-shadow: 0 0 5px #fff; margin-left: 10px;">20</span>
+        </div>
       </div>
     </div>
   </div>
